@@ -9,6 +9,7 @@
   "author": "Adobe Inc.",
   "license": "Apache-2.0",
   "dependencies": {
-    "@adobe/aio-lib-core-logging": "^3.0.2"
+    "@adobe/aio-lib-core-logging": "^3.0.2",
+    "node-fetch-cookies": "^2.1.1"
   }
 }
