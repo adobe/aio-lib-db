@@ -6,18 +6,12 @@
 
 ## Installation
 
-Currently, `aio-lib-abdb` is used locally. Install it by providing the local path to the package:
-
-```bash
-npm install /path/to/aio-lib-abdb
-```
-
-Or add it directly to your `package.json`:
+Currently, `aio-lib-abdb` is used locally. Install it by adding it to your `package.json` file:
 
 ```json
 {
   "dependencies": {
-    "aio-lib-abdb": "file:../path/to/aio-lib-abdb"
+    "@adobe/aio-lib-abdb": "file:../path/to/aio-lib-abdb"
   }
 }
 ```
@@ -63,8 +57,3 @@ main();
 - Powerful querying capabilities
 - Fine-grained updates without rewriting entire blobs
 - Native integration into Adobe I/O Runtime serverless apps
-
-
-
-
-
