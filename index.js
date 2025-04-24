@@ -1,5 +1,3 @@
-require('./lib/AdobeDocDB')
+require('./lib/ABDB')
 
 module.exports = require('./lib/init')
-
-
