@@ -11,6 +11,7 @@
   "dependencies": {
     "@adobe/aio-lib-core-logging": "^3.0.2",
     "axios": "^1.8.4",
+    "bson": "^6.10.3",
     "http-cookie-agent": "^7.0.1",
     "tough-cookie": "^5.1.2"
   }
