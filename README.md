@@ -28,7 +28,7 @@ First, require and initialize the library:
 const abdb = require('aio-lib-abdb');
 
 async function main() {
-  const db = abdb.init({ tenantId: '<your-tenant-id>' });
+  const db = await abdb.init({ tenantId: '<your-tenant-id>' });
   const client = await db.connect();
 
   const stats = await client.dbStats();
