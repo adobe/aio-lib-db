@@ -1,7 +1,12 @@
 const { BSONValue, EJSON } = require("bson")
 
-// Transform any of the object's properties that are BSONValues representing primitives back into their js types
-// Does a deep mapping
+/**
+ * Transform any of the object's properties that are BSONValues representing primitives back into their js types
+ * Does a recursive deep mapping
+ *
+ * @param {Object} obj
+ * @returns {BSONValue|Object|*}
+ */
 function transformBsonPrimitives(obj) {
   // A long-standing bug in js makes typeof null = 'object', so filter that out first
   if (obj === null) {
@@ -30,7 +35,12 @@ function transformBsonPrimitives(obj) {
   }
 }
 
-// Parse a response into BSON with {relaxed: false} except for primitives
+/**
+ * Parse a response into BSON with {relaxed: false} except for primitives
+ *
+ * @param {Object} res The body from an Axios response
+ * @returns {Object}
+ */
 function cleanParse(res) {
   return transformBsonPrimitives(EJSON.parse(JSON.stringify(res), { relaxed: false }))
 }
