@@ -14,7 +14,7 @@ const { EJSON } = require("bson")
  * @throws {AbdbError}
  */
 async function apiPost(axiosClient, apiPath, tenantId = undefined, params = {}, options = {}) {
-  const endpoint = apiPath.match(/([^/]+)$/g)[0]
+  const endpoint = apiPath.substring(apiPath.lastIndexOf('/') + 1)
   let res
   try {
     /** @type {Object|null}
@@ -53,7 +53,7 @@ async function apiPost(axiosClient, apiPath, tenantId = undefined, params = {}, 
  * @throws {AbdbError}
  */
 async function apiGet(axiosClient, apiPath, tenantId = undefined) {
-  const endpoint = apiPath.match(/([^/]+)$/g)[0]
+  const endpoint = apiPath.substring(apiPath.lastIndexOf('/') + 1)
   let res
   try {
     /** @type {Object|null}
