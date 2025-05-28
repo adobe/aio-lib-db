@@ -21,7 +21,7 @@ async function apiPost(axiosClient, apiPath, tenantId = undefined, params = {}, 
      * @mixes AxiosRequestConfig */
     const reqConfig = {
       headers: {
-        'x-abdb-runtime': 'RUNTIME_PLACEHOLDER', // TODO: Implement runtime namespace validation, see CEXT-4617
+        'x-runtime-namespace': 'RUNTIME_PLACEHOLDER', // TODO: Implement runtime namespace validation, see CEXT-4617
       },
       auth: { // TODO: Implement basic auth, see CEXT-4617
         username: 'user',
@@ -71,7 +71,7 @@ async function apiGet(axiosClient, apiPath, tenantId = undefined) {
      * @mixes AxiosRequestConfig */
     const reqConfig = {
       headers: {
-        'x-abdb-runtime': 'RUNTIME_PLACEHOLDER', // TODO: Implement runtime namespace validation, see CEXT-4617
+        'x-runtime-namespace': 'RUNTIME_PLACEHOLDER', // TODO: Implement runtime namespace validation, see CEXT-4617
       },
       auth: { // TODO: Implement basic auth, see CEXT-4617
         username: 'user',
