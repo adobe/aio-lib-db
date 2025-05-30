@@ -17,9 +17,20 @@ async function apiPost(axiosClient, apiPath, tenantId = undefined, params = {}, 
   const endpoint = apiPath.substring(apiPath.lastIndexOf('/') + 1)
   let res
   try {
-    /** @type {Object|null}
+    /** @type {Object}
      * @mixes AxiosRequestConfig */
-    const tenantHeader = tenantId ? { headers: { 'x-abdb-tenant-id': tenantId } } : {}
+    const reqConfig = {
+      headers: {
+        'x-runtime-namespace': 'RUNTIME_PLACEHOLDER', // TODO: Implement runtime namespace validation, see CEXT-4617
+      },
+      auth: { // TODO: Implement basic auth, see CEXT-4617
+        username: 'user',
+        password: 'pass'
+      }
+    }
+    if (tenantId) {
+      reqConfig.headers['x-abdb-tenant-id'] = tenantId
+    }
     const body = params
     if (options) {
       body.options = options
@@ -27,7 +38,7 @@ async function apiPost(axiosClient, apiPath, tenantId = undefined, params = {}, 
     res = await axiosClient.post(
       `${ENDPOINT_URL}/v1/${apiPath}`,
       EJSON.stringify(body, { relaxed: false }),
-      tenantHeader
+      reqConfig
     )
   }
   catch (err) {
@@ -56,10 +67,21 @@ async function apiGet(axiosClient, apiPath, tenantId = undefined) {
   const endpoint = apiPath.substring(apiPath.lastIndexOf('/') + 1)
   let res
   try {
-    /** @type {Object|null}
+    /** @type {Object}
      * @mixes AxiosRequestConfig */
-    const tenantHeader = tenantId ? { headers: { 'x-abdb-tenant-id': tenantId } } : {}
-    res = await axiosClient.get(`${ENDPOINT_URL}/v1/${apiPath}`, tenantHeader)
+    const reqConfig = {
+      headers: {
+        'x-runtime-namespace': 'RUNTIME_PLACEHOLDER', // TODO: Implement runtime namespace validation, see CEXT-4617
+      },
+      auth: { // TODO: Implement basic auth, see CEXT-4617
+        username: 'user',
+        password: 'pass'
+      }
+    }
+    if (tenantId) {
+      reqConfig.headers['x-abdb-tenant-id'] = tenantId
+    }
+    res = await axiosClient.get(`${ENDPOINT_URL}/v1/${apiPath}`, reqConfig)
   }
   catch (err) {
     if (err.response?.data) {
