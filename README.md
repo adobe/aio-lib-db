@@ -22,13 +22,15 @@ Currently, `aio-lib-abdb` is used locally. Install it by adding it to your `pack
 
 ## Usage
 
+> To find credentials and the runtime namespace, click "Download all" in the Adobe Developer Console for your project workspace and the values will be under `project.workspace.details.runtime.namespaces`.
+
 First, require and initialize the library:
 
 ```javascript
 const abdb = require('aio-lib-abdb');
 
 async function main() {
-  const db = await abdb.init({ tenantId: '<your-tenant-id>' });
+  const db = await abdb.init({ tenantId: '<your-tenant-id>', runtimeNamespace: '<your-namespace>', auth: '<user>:<pass>' });
   const client = await db.connect();
 
   const stats = await client.dbStats();

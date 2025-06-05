@@ -49,13 +49,14 @@ async function apiRequest(abdb, apiPath, method, body = {}, tenantId = undefined
   const fullUrl = `${ENDPOINT_URL}/${apiPath}`
   let res
   try {
+    const creds = abdb.auth.split(/:(.*)/,2)
     /** @type {Object}
      * @mixes AxiosRequestConfig */
     const reqConfig = {
       headers: { [RUNTIME_HEADER]: abdb.runtimeNamespace },
-      auth: { // TODO: Implement basic auth, see CEXT-4617
-        username: 'user',
-        password: 'pass'
+      auth: {
+        username: creds[0],
+        password: creds[1]
       }
     }
     if (tenantId || abdb.tenantId) {
