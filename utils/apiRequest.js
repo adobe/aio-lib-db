@@ -1,4 +1,4 @@
-const { ENDPOINT_URL, RUNTIME_HEADER, TENANT_HEADER, REQUEST_ID_HEADER } = require('../lib/constants')
+const { ENDPOINT_URL, RUNTIME_HEADER, REQUEST_ID_HEADER } = require('../lib/constants')
 const AbdbError = require('../lib/abdbError')
 const { EJSON } = require("bson")
 
@@ -9,16 +9,15 @@ const { EJSON } = require("bson")
  * @param {string} apiPath abdb api url past <ENDPOINT>/v1/
  * @param {Object=} params
  * @param {Object=} options
- * @param {string=} tenantId TODO: Remove tenancy in favor of runtime, see CEXT-4671
  * @returns {Promise<*>}
  * @throws {AbdbError}
  */
-async function apiPost(abdb, apiPath, params = {}, options = {}, tenantId = undefined) {
+async function apiPost(abdb, apiPath, params = {}, options = {}) {
   const body = params || {}
   if (options) {
     body.options = options
   }
-  return await apiRequest(abdb, `v1/${apiPath}`, 'POST', body, tenantId)
+  return await apiRequest(abdb, `v1/${apiPath}`, 'POST', body)
 }
 
 /**
@@ -26,12 +25,11 @@ async function apiPost(abdb, apiPath, params = {}, options = {}, tenantId = unde
  *
  * @param {Abdb} abdb
  * @param {string} apiPath abdb api url past <ENDPOINT>/v1/
- * @param {string=} tenantId TODO: Remove tenancy in favor of runtime, see CEXT-4671
  * @returns {Promise<*>}
  * @throws {AbdbError}
  */
-async function apiGet(abdb, apiPath, tenantId = undefined) {
-  return await apiRequest(abdb, `v1/${apiPath}`, 'GET', null, tenantId)
+async function apiGet(abdb, apiPath) {
+  return await apiRequest(abdb, `v1/${apiPath}`, 'GET')
 }
 
 /**
@@ -41,11 +39,10 @@ async function apiGet(abdb, apiPath, tenantId = undefined) {
  * @param {string} apiPath
  * @param {string} method
  * @param {Object=} body
- * @param {string=} tenantId TODO: Remove tenancy in favor of runtime, see CEXT-4671
  * @returns {Promise<*>}
  * @throws {AbdbError}
  */
-async function apiRequest(abdb, apiPath, method, body = {}, tenantId = undefined) {
+async function apiRequest(abdb, apiPath, method, body = {}) {
   const fullUrl = `${ENDPOINT_URL}/${apiPath}`
   let res
   try {
@@ -58,9 +55,6 @@ async function apiRequest(abdb, apiPath, method, body = {}, tenantId = undefined
         username: creds[0],
         password: creds[1]
       }
-    }
-    if (tenantId || abdb.tenantId) {
-      reqConfig.headers[TENANT_HEADER] = tenantId || abdb.tenantId
     }
     if (method === 'GET') {
       res = await abdb.axiosClient.get(fullUrl, reqConfig)

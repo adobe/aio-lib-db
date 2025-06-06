@@ -16,21 +16,25 @@ Currently, `aio-lib-abdb` is used locally. Install it by adding it to your `pack
 }
 ```
 
-> **Note:** In future, the library will be available on npm for easier installation.
+> **Note:** In the future, the library will be available on npm for easier installation.
 
 ---
 
 ## Usage
 
+First, set `RUNTIME_NAMESPACE` and `RUNTIME_AUTH` in your `.env` file.
+
+> `RUNTIME_AUTH` must be in `<user>:<pass>` format.
+> 
 > To find runtime namespace and credentials, click "Download all" in the Adobe Developer Console for your project workspace and the values will be under `project.workspace.details.runtime.namespaces`.
 
-First, require and initialize the library:
+Then require and initialize the library:
 
 ```javascript
 const abdb = require('aio-lib-abdb');
 
 async function main() {
-  const db = await abdb.init({ tenantId: '<your-tenant-id>', runtimeNamespace: '<your-namespace>', runtimeAuth: '<user>:<pass>' });
+  const db = await abdb.init();
   const client = await db.connect();
 
   const stats = await client.dbStats();
@@ -46,7 +50,7 @@ main();
 
 ## API Overview
 
-- `init(options)`: Initializes the client with tenant ID.
+- `init(runtimeNamespace?, runtimeAuth?)`: Initializes the client for the provided `runtimeNamespace` and `runtimeAuth`.  `RUNTIME_NAMESPACE` and `RUNTIME_AUTH` can be provided through environment variables instead.
 - `connect()`: Connects to the database and returns a client.
 - `dbStats()`: Returns database statistics (requires connection).
 - `close()`: Closes the database connection.
