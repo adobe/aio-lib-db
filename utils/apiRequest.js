@@ -49,7 +49,7 @@ async function apiRequest(abdb, apiPath, method, body = {}, tenantId = undefined
   const fullUrl = `${ENDPOINT_URL}/${apiPath}`
   let res
   try {
-    const creds = abdb.auth.split(/:(.*)/,2)
+    const creds = abdb.runtimeAuth.split(/:(.*)/,2)
     /** @type {Object}
      * @mixes AxiosRequestConfig */
     const reqConfig = {
