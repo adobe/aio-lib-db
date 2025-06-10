@@ -28,7 +28,7 @@ First, set `RUNTIME_NAMESPACE` and `RUNTIME_AUTH` in your `.env` file.
 > 
 > To find runtime namespace and credentials, click "Download all" in the Adobe Developer Console for your project workspace and the values will be under `project.workspace.details.runtime.namespaces`.
 
-Then require and initialize the library:
+Next, import and initialize the library:
 
 ```javascript
 const abdb = require('aio-lib-abdb');
