@@ -22,9 +22,9 @@ Currently, `aio-lib-abdb` is used locally. Install it by adding it to your `pack
 
 ## Usage
 
-First, set `RUNTIME_NAMESPACE` and `RUNTIME_AUTH` in your `.env` file.
+First, set `AIO_runtime_namespace` and `AIO_runtime_auth` in your `.env` file.
 
-> `RUNTIME_AUTH` must be in `<user>:<pass>` format.
+> `AIO_runtime_auth` must be in `<user>:<pass>` format.
 > 
 > To find runtime namespace and credentials, click "Download all" in the Adobe Developer Console for your project workspace and the values will be under `project.workspace.details.runtime.namespaces`.
 
@@ -50,7 +50,7 @@ main();
 
 ## API Overview
 
-- `init(runtimeNamespace?, runtimeAuth?)`: Initializes the client for the provided `runtimeNamespace` and `runtimeAuth`.  `RUNTIME_NAMESPACE` and `RUNTIME_AUTH` can be provided through environment variables instead.
+- `init(runtimeNamespace?, runtimeAuth?)`: Initializes the client for the provided `runtimeNamespace` and `runtimeAuth`.  `AIO_runtime_namespace` and `AIO_runtime_auth` can be provided through environment variables instead.
 - `connect()`: Connects to the database and returns a client.
 - `dbStats()`: Returns database statistics (requires connection).
 - `close()`: Closes the database connection.
