@@ -3,9 +3,9 @@ const DbError = require('../lib/DbError')
 const { EJSON } = require("bson")
 
 /**
- * Execute a POST request to the db proxy service API and return the data field from the result
+ * Execute a POST request to the App Builder Database Service API and return the data field from the result
  *
- * @param {Db} db
+ * @param {DbBase} db
  * @param {string} apiPath db api url past <ENDPOINT>/v1/
  * @param {Object=} params
  * @param {Object=} options
@@ -21,9 +21,9 @@ async function apiPost(db, apiPath, params = {}, options = {}) {
 }
 
 /**
- * Execute a GET request to the db proxy service API and return the data field from the result
+ * Execute a GET request to the App Builder Database Service API and return the data field from the result
  *
- * @param {Db} db
+ * @param {DbBase} db
  * @param {string} apiPath db api url past <ENDPOINT>/v1/
  * @returns {Promise<*>}
  * @throws {DbError}
@@ -33,9 +33,9 @@ async function apiGet(db, apiPath) {
 }
 
 /**
- * Internal helper method to construct and execute a request to the db proxy service API
+ * Internal helper method to construct and execute a request to the App Builder Database Service API
  *
- * @param {Db} db
+ * @param {DbBase} db
  * @param {string} apiPath
  * @param {string} method
  * @param {Object=} body
