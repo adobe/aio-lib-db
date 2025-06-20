@@ -1,0 +1,67 @@
+name: Pull request comment
+on:
+  issue_comment:
+    types:
+    - created
+defaults:
+  run:
+    shell: bash
+permissions: {}
+env:
+  JOB_NAME: "Pull Request Tests"
+jobs:
+  create-check:
+    name: Create Check
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '/retest')
+    runs-on: ubuntu-latest
+    permissions:
+      # checks read ~ /repos/OWNER/REPO/commits/REF/check-suites
+      # checks write ~ /repos/OWNER/REPO/check-suites/CHECK_SUITE_ID/rerequest
+      # contents read ~ actions/checkout
+      # pull-requests read ~ gh pr view
+      checks: write 
+      contents: read
+      pull-requests: read
+    steps:
+    - uses: actions/checkout@v3
+    # https://docs.github.com/en/webhooks/webhook-events-and-payloads#issue_comment
+    # No easy way to get the sha of the current PR. So instead get its number and use
+    # the number with https://cli.github.com/manual/gh_pr_view to get name and sha.
+    - name: Get PR sha
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |-
+        export PR_URL="${{ github.event.issue.pull_request.url }}"
+        export PR_NUMBER=${PR_URL##*/}
+        export BRANCH_NAME=$(gh pr view $PR_NUMBER --json headRefName --jq '.headRefName')
+        export BRANCH_HEAD=$(gh pr view $PR_NUMBER --json commits --jq '.commits[-1].oid')
+        echo "PR $PR_NUMBER is for $BRANCH_NAME @ $BRANCH_HEAD"
+        echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+        echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+        echo "BRANCH_HEAD=$BRANCH_HEAD" >> $GITHUB_ENV
+    # From this stage you can use BRANCH_NAME or BRANCH_HEAD
+    # Now we have both / either the branch name, and the head commit sha. They
+    # can be used in the checks + check-suites APIs to list 
+    # https://docs.github.com/en/rest/checks?apiVersion=2022-11-28
+    # Rerun by run's suite ID
+    - name: Get check run ID
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#list-check-runs-for-a-git-reference
+      run: |-
+        {
+          echo "CHECK_SUITE_IDS<<EOF"
+          gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/${{ github.repository }}/commits/${{ env.BRANCH_HEAD }}/check-runs | \
+          jq '.check_runs[] | select(.name == "${{ env.JOB_NAME }}") | select(.pull_requests != null) | select(.pull_requests[].number == ${{ env.PR_NUMBER }}) | .check_suite.id'
+          echo "EOF"
+        } >> $GITHUB_ENV
+    - name: Rerequest check suite
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # https://docs.github.com/en/rest/checks/suites?apiVersion=2022-11-28#rerequest-a-check-suite
+      run: >-
+        while IFS= read -r CHECK_SUITE_ID ; do
+        gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28"
+        /repos/${{ github.repository }}/check-suites/$CHECK_SUITE_ID/rerequest
+        ; done <<< "${{ env.CHECK_SUITE_IDS }}"
