@@ -1,17 +1,17 @@
-# aio-lib-abdb
+# aio-lib-db
 
-**aio-lib-abdb** is a lightweight document database library for Adobe I/O Runtime apps. It provides structured, queryable, and flexible data persistence beyond simple file or key-value storage.
+**aio-lib-db** is a lightweight document database library for Adobe I/O Runtime apps. It provides structured, queryable, and flexible data persistence beyond simple file or key-value storage.
 
 ---
 
 ## Installation
 
-Currently, `aio-lib-abdb` is used locally. Install it by adding it to your `package.json` file:
+Currently, `aio-lib-db` is used locally. Install it by adding it to your `package.json` file:
 
 ```json
 {
   "dependencies": {
-    "@adobe/aio-lib-abdb": "file:../path/to/aio-lib-abdb"
+    "@adobe/aio-lib-db": "file:../path/to/aio-lib-db"
   }
 }
 ```
@@ -31,10 +31,10 @@ First, set `AIO_runtime_namespace` and `AIO_runtime_auth` in your `.env` file.
 Next, import and initialize the library:
 
 ```javascript
-const abdb = require('aio-lib-abdb');
+const libDb = require('aio-lib-db');
 
 async function main() {
-  const db = await abdb.init();
+  const db = await libDb.init();
   const client = await db.connect();
 
   const stats = await client.dbStats();
@@ -57,7 +57,7 @@ main();
 
 ---
 
-## Why Use aio-lib-abdb?
+## Why Use aio-lib-db?
 
 - Structured document storage (JSON-based)
 - Powerful querying capabilities

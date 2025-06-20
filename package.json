@@ -1,5 +1,5 @@
 {
-  "name": "aio-lib-abdb",
+  "name": "aio-lib-db",
   "version": "1.0.0",
   "description": "An abstraction on top of Document DB storage",
   "main": "index.js",
@@ -9,7 +9,6 @@
   "author": "Adobe Inc.",
   "license": "Apache-2.0",
   "dependencies": {
-    "@adobe/aio-lib-core-logging": "^3.0.2",
     "axios": "^1.8.4",
     "bson": "^6.10.3",
     "dotenv": "^16.5.0",
