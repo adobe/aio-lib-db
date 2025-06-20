@@ -28,7 +28,6 @@ jobs:
 #        if: steps.retest_check.outputs.result == 'true'
         with:
           node-version: '16'
-          cache: 'npm'
       - name: Install dependencies
         run: npm install
       - name: Run tests
