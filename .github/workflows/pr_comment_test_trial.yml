@@ -10,14 +10,14 @@ jobs:
     if: ${{ github.event.issue.pull_request }}
     runs-on: ubuntu-latest
     steps:
-      - name: Debug github.event
-        run: echo "${{ toJson(github.event) }}"
+      # - name: Debug github.event
+      #   run: echo "${{ toJson(github.event) }}"
       - name: Check for /retest comment
         id: retest_check
         uses: actions/github-script@v6
         with:
           script: |
-            const comment = context.payload.comment.body;
+            const comment = github.event.comment.body;
             if (comment.includes('/retest')) {
               return 'true';
             } else {
