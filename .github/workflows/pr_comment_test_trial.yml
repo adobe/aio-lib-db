@@ -10,6 +10,10 @@ jobs:
     if: ${{ github.event.issue.pull_request }}
     runs-on: ubuntu-latest
     steps:
+      - name: Debug github.event
+        run: echo "${{ toJson(github.event) }}"
+      - name: Debug context payload
+        run: echo "${{ toJson(context.payload) }}"
       - name: Check for /retest comment
         id: retest_check
         uses: actions/github-script@v6
