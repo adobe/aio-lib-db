@@ -10,6 +10,8 @@ jobs:
     if: ${{ github.event.issue.pull_request && github.event.comment.body == '/retest' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Debug github object
+        run: echo "${{ toJson(github) }}"
       - uses: actions/checkout@v3
         with:
           ref: refs/pull/${{ github.event.issue.number }}/head
