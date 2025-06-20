@@ -7,30 +7,30 @@ jobs:
   test_pr:
     name: Pull Request Comment Tests
     # This job will only run if the comment is made on a pull request, not an issue
-    if: ${{ github.event.issue.pull_request && github.event.bodyText.includes('/retest') }}
+    if: ${{ github.event.issue.pull_request }}
     runs-on: ubuntu-latest
     steps:
-      # - name: Check for /retest comment
-      #   id: retest_check
-      #   uses: actions/github-script@v6
-      #   with:
-      #     script: |
-      #       const comment = context.payload.comment.body;
-      #       if (comment.includes('/retest')) {
-      #         return 'true';
-      #       } else {
-      #         return 'false';
-      #       }
+      - name: Check for /retest comment
+        id: retest_check
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const comment = context.payload.comment.body;
+            if (comment.includes('/retest')) {
+              return 'true';
+            } else {
+              return 'false';
+            }
       - uses: actions/checkout@v2
-        # if: steps.retest_check.outputs.result == 'true'
+        if: steps.retest_check.outputs.result == 'true'
       - name: Set up Node.js
         uses: actions/setup-node@v2
-        # if: steps.retest_check.outputs.result == 'true'
+        if: steps.retest_check.outputs.result == 'true'
         with:
           node-version: '16'
       - name: Install dependencies
-        # if: steps.retest_check.outputs.result == 'true'
+        if: steps.retest_check.outputs.result == 'true'
         run: npm install
       - name: Run tests
-        # if: steps.retest_check.outputs.result == 'true'
+        if: steps.retest_check.outputs.result == 'true'
         run: npm test
