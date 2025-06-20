@@ -31,10 +31,10 @@ First, set `AIO_runtime_namespace` and `AIO_runtime_auth` in your `.env` file.
 Next, import and initialize the library:
 
 ```javascript
-const db = require('aio-lib-db');
+const libDb = require('aio-lib-db');
 
 async function main() {
-  const db = await db.init();
+  const db = await libDb.init();
   const client = await db.connect();
 
   const stats = await client.dbStats();
