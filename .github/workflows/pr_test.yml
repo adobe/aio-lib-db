@@ -7,12 +7,15 @@ jobs:
   test_pr:
     name: Pull Request Tests
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [ 20, 22, 24 ] # Node versions before 20 are EoL
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
+      - name: Set up Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: ${{ matrix.node }}
       - name: Install dependencies
         run: npm install
       - name: Run tests
