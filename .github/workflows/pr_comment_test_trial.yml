@@ -14,9 +14,6 @@ jobs:
     name: Create Check
     if: github.event.issue.pull_request && contains(github.event.comment.body, '/retest')
     runs-on: ubuntu-latest
-#    strategy:
-#      matrix:
-#        node: [ 20, 22, 24 ] # Node versions before 20 are EoL
     permissions:
       # checks read ~ /repos/OWNER/REPO/commits/REF/check-suites
       # checks write ~ /repos/OWNER/REPO/check-suites/CHECK_SUITE_ID/rerequest
@@ -56,10 +53,9 @@ jobs:
           echo "CHECK_SUITE_IDS<<EOF"
           gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
           /repos/${{ github.repository }}/commits/${{ env.BRANCH_HEAD }}/check-runs | \
-          jq '[.check_runs[] | select(.name | startswith("${{ env.JOB_NAME }}")) | select(.pull_requests != null) | select(.pull_requests[].number == ${{ env.PR_NUMBER }}) | .check_suite.id | tostring ] | map({(.):1}) | add | keys_unsorted[] | tonumber'
+          jq '[.check_runs[] | select(.name | startswith("${{ env.JOB_NAME }}")) | select(.pull_requests != null) | select(.pull_requests[].number == ${{ env.PR_NUMBER }}) | .check_suite.id ] | unique[]'
           echo "EOF"
         } >> $GITHUB_ENV
-      # select(.name == "${{ env.JOB_NAME }} (${{ matrix.node }})") | select(.pull_requests != null) | select(.pull_requests[].number == ${{ env.PR_NUMBER }}) | .check_suite.id'
     - name: Rerequest check suite
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
