@@ -14,7 +14,7 @@ const { EJSON } = require("bson")
  */
 async function apiPost(db, apiPath, params = {}, options = {}) {
   const body = params || {}
-  if (options) {
+  if (Object.keys(options).length > 0) {
     body.options = options
   }
   return await apiRequest(db, `v1/${apiPath}`, 'POST', body)
