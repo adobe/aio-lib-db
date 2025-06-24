@@ -14,12 +14,15 @@ jobs:
     name: Create Check
     if: github.event.issue.pull_request && contains(github.event.comment.body, '/retest')
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [ 20, 22, 24 ] # Node versions before 20 are EoL
     permissions:
       # checks read ~ /repos/OWNER/REPO/commits/REF/check-suites
       # checks write ~ /repos/OWNER/REPO/check-suites/CHECK_SUITE_ID/rerequest
       # contents read ~ actions/checkout
       # pull-requests read ~ gh pr view
-      checks: write 
+      checks: write
       contents: read
       pull-requests: read
     steps:
@@ -41,7 +44,7 @@ jobs:
         echo "BRANCH_HEAD=$BRANCH_HEAD" >> $GITHUB_ENV
     # From this stage you can use BRANCH_NAME or BRANCH_HEAD
     # Now we have both / either the branch name, and the head commit sha. They
-    # can be used in the checks + check-suites APIs to list 
+    # can be used in the checks + check-suites APIs to list
     # https://docs.github.com/en/rest/checks?apiVersion=2022-11-28
     # Rerun by run's suite ID
     - name: Get check run ID
@@ -53,7 +56,7 @@ jobs:
           echo "CHECK_SUITE_IDS<<EOF"
           gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
           /repos/${{ github.repository }}/commits/${{ env.BRANCH_HEAD }}/check-runs | \
-          jq '.check_runs[] | select(.name == "${{ env.JOB_NAME }}") | select(.pull_requests != null) | select(.pull_requests[].number == ${{ env.PR_NUMBER }}) | .check_suite.id'
+          jq '.check_runs[] | select(.name == "${{ env.JOB_NAME }} (${{ matrix.node }})") | select(.pull_requests != null) | select(.pull_requests[].number == ${{ env.PR_NUMBER }}) | .check_suite.id'
           echo "EOF"
         } >> $GITHUB_ENV
     - name: Rerequest check suite
