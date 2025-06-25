@@ -109,9 +109,12 @@ describe('DbCollection tests', () => {
       { $match: { category: 'electronics' } },
       { $group: { _id: '$category', total: { $sum: '$price' } } }
     ]
-    const res = await collection.aggregate(pipeline)
+    // .aggregate() doesn't make a request until iteration actually starts
+    const cursor = collection.aggregate(pipeline)
+    expect(axiosClient).not.toHaveCalledServicePost('v1/collection/testCollection/aggregate')
+    await cursor.hasNext()
     expect(axiosClient).toHaveCalledServicePost('v1/collection/testCollection/aggregate', { pipeline: pipeline })
-    expect(res).toHaveProperty('constructor.name', 'DbCursor')
+    expect(cursor).toHaveProperty('constructor.name', 'AggregateCursor')
   })
 
   test('drop calls the appropriate endpoint', async () => {
@@ -200,8 +203,11 @@ describe('DbCollection tests', () => {
   })
 
   test('find calls the appropriate endpoint', async () => {
-    const res = await collection.find({ name: 'Item1' })
+    // .find() doesn't make a request until iteration actually starts
+    const cursor = await collection.find({ name: 'Item1' })
+    expect(axiosClient).not.toHaveCalledServicePost('v1/collection/testCollection/find')
+    await cursor.hasNext()
     expect(axiosClient).toHaveCalledServicePost('v1/collection/testCollection/find', { filter: { name: 'Item1' } })
-    expect(res).toHaveProperty('constructor.name', 'DbCursor')
+    expect(cursor).toHaveProperty('constructor.name', 'FindCursor')
   })
 })

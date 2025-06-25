@@ -206,7 +206,7 @@ class AxiosMock {
         return result = r.result
       }
     })
-    if (result) {
+    if (result !== undefined) {
       // Have to deep clone the result to avoid issues with the original object being modified by a previous test
       return new Promise((resolve) => resolve(deepClone(result)))
     }
@@ -221,7 +221,7 @@ class AxiosMock {
         result = r.result
       }
     })
-    if (result) {
+    if (result !== undefined) {
       // Have to deep clone the result to avoid issues with the original object being modified by a previous test
       return new Promise((resolve) => resolve(deepClone(result)))
     }

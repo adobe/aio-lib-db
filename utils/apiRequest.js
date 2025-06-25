@@ -13,7 +13,7 @@ const { EJSON } = require("bson")
  * @throws {DbError}
  */
 async function apiPost(db, apiPath, params = {}, options = {}) {
-  const body = params || {}
+  const body = params
   if (Object.keys(options).length > 0) {
     body.options = options
   }
