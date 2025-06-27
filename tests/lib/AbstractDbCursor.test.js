@@ -1,26 +1,27 @@
 const { getDb } = require("../testingUtils")
-const { default: axios } = require('axios')
+const { TEST_CURSOR_ID } = require('../__mocks__/axiosMock')
 const AbstractDbCursor = require("../../lib/AbstractDbCursor")
 const { apiPost } = require("../../utils/apiRequest")
 const { CURSOR_INIT_ERR_MESSAGE } = require("../../lib/constants")
 
-const axiosClient = axios.create()
-const TEST_CURSOR_ID = axios.TEST_CURSOR_ID
-
 // The _firstRequest method is abstract in AbstractDbCursor, so we need to implement a test class
 class TestCursor extends AbstractDbCursor {
   async _firstRequest() {
-    return await apiPost(this._db, `collection/${this._collection}/find`, undefined, this._options)
+    return await apiPost(this._db, `collection/${this._collection}/find`, undefined, this._options, true)
   }
 }
 
 describe('AbstractDbCursor iteration tests', () => {
   let cursor
+  let sessClient
+  let nonSessClient
 
   beforeEach(async () => {
     const client = await getDb().connect()
     const collection = client.collection('testCollection')
     cursor = new TestCursor(collection.db, collection.name, {})
+    sessClient = collection.db.axiosClientWithSession
+    nonSessClient = collection.db.axiosClientWithoutSession
     jest.clearAllMocks()
   })
 
@@ -31,23 +32,25 @@ describe('AbstractDbCursor iteration tests', () => {
       expect(res).toHaveProperty('field', `value${++counter}`)
     }
     expect(counter).toBe(6)
-    expect(axiosClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
+    expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
+    expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
   })
 
   test('cursor does not call getMore() until after the first results have been consumed', async () => {
     expect(cursor.closed).toBe(false)
     expect(await cursor.hasNext()).toBe(true)
-    expect(axiosClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
+    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
 
     // Consume the first batch
     await cursor.next()
     await cursor.next()
     await cursor.next()
-    expect(axiosClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
+    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
 
     // Now hasNext() should trigger a getMore call
     expect(await cursor.hasNext()).toBe(true)
-    expect(axiosClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
+    expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
+    expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
   })
 
   test('cursor iteration using toArray()', async () => {
@@ -56,7 +59,8 @@ describe('AbstractDbCursor iteration tests', () => {
     for (let i = 0; i < results.length; i++) {
       expect(results[i]).toHaveProperty('field', `value${i + 1}`)
     }
-    expect(axiosClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
+    expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
+    expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
   })
 
   test('cursor iteration using for await...of', async () => {
@@ -65,7 +69,8 @@ describe('AbstractDbCursor iteration tests', () => {
       expect(doc).toHaveProperty('field', `value${++counter}`)
     }
     expect(counter).toBe(6)
-    expect(axiosClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
+    expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
+    expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
   })
 
   test('cursor iteration using stream without transformation', async () => {
@@ -75,7 +80,8 @@ describe('AbstractDbCursor iteration tests', () => {
       expect(doc).toHaveProperty('field', `value${++counter}`)
     }
     expect(counter).toBe(6)
-    expect(axiosClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
+    expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
+    expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
   })
 
   test('cursor iteration using stream with transformation', async () => {
@@ -88,7 +94,8 @@ describe('AbstractDbCursor iteration tests', () => {
       expect(doc).toHaveProperty('field', `value${++counter * 2}`)
     }
     expect(counter).toBe(6)
-    expect(axiosClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
+    expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
+    expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
   })
 
   test('cursor iteration with transformation using .map()', async () => {
@@ -101,7 +108,8 @@ describe('AbstractDbCursor iteration tests', () => {
     for (let i = 0; i < results.length; i++) {
       expect(results[i]).toHaveProperty('field', `value${(i + 1) * 2}`)
     }
-    expect(axiosClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
+    expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
+    expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
   })
 
   test('cursor iteration using events', async () => {
@@ -113,16 +121,19 @@ describe('AbstractDbCursor iteration tests', () => {
     await new Promise((resolve) => cursor.on('end', resolve))
     expect(counter).toBe(6)
 
-    expect(axiosClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
+    expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
+    expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
   })
 
   test('cursor.explain() immediately calls the api and closes the cursor', async () => {
     await cursor.explain()
-    expect(axiosClient).toHaveCalledServicePost('v1/collection/testCollection/find', { options: { explain: true } })
+    expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/find', { options: { explain: true } })
+    expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/find')
     // After calling explain, the cursor should be closed and not usable
     expect(cursor.closed).toBe(true)
     expect(await cursor.hasNext()).toBe(false)
-    expect(axiosClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
+    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
+    expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
   })
 
   test('cursor.explain(), cursor.batchSize(), and cursor.map() cannot be called after initialization', async () => {

@@ -24,11 +24,14 @@ beforeEach(() => {
 
 function getDb() {
   const db = new DbBase(TEST_NAMESPACE, TEST_AUTH)
-  // Ensure that cookies are being tracked for session
+  // Ensure that axios clients are created both with and without session cookie tracking
   expect(axios.create).toHaveBeenCalledWith({
     httpAgent: expect.any(HttpCookieAgent),
     httpsAgent: expect.any(HttpsCookieAgent)
   })
+  expect(axios.create).toHaveBeenCalledWith()
+  expect(db.axiosClientWithoutSession).toHaveProperty('hasSession', false)
+  expect(db.axiosClientWithSession).toHaveProperty('hasSession', true)
   return db
 }
 

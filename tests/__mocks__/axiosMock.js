@@ -1,6 +1,7 @@
 const { ENDPOINT_URL } = require('../../lib/constants')
 const { Long, EJSON } = require("bson")
 const { v6: uuidV6 } = require("uuid")
+const { HttpCookieAgent, HttpsCookieAgent } = require("http-cookie-agent/http")
 
 // Helper to construct the result object returned by an axios request
 function buildResponse(body = {}) {
@@ -191,6 +192,8 @@ const POST_ENDPOINT_RESULTS = [
 const ROUTE_START = ENDPOINT_URL.length + 1
 
 class AxiosMock {
+  hasSession = false
+
   interceptors = {
     response: {
       use: jest.fn((handler) => {
@@ -229,14 +232,24 @@ class AxiosMock {
   })
 }
 
-let mockClient
-module.exports.default = {
-  create: jest.fn(() => {
-    if (!mockClient) {
-      mockClient = new AxiosMock()
-    }
-    return mockClient
-  }),
+let mockSessionClient
+let mockClientWithoutSession
+module.exports = {
+  default: {
+    create: jest.fn((config) => {
+      if (config?.httpAgent instanceof HttpCookieAgent || config?.httpsAgent instanceof HttpsCookieAgent) {
+        if (!mockSessionClient) {
+          mockSessionClient = new AxiosMock()
+          mockSessionClient.hasSession = true
+        }
+        return mockSessionClient
+      }
+      if (!mockClientWithoutSession) {
+        mockClientWithoutSession = new AxiosMock()
+      }
+      return mockClientWithoutSession
+    })
+  },
   // Export this value so cursor tests make sure to use the same ID as mocked results
   // Can't put in testingUtils because it would cause circular dependency issues
   TEST_CURSOR_ID
