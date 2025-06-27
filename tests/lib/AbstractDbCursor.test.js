@@ -20,7 +20,7 @@ describe('AbstractDbCursor iteration tests', () => {
   beforeEach(async () => {
     const client = await getDb().connect()
     const collection = client.collection('testCollection')
-    cursor = new TestCursor(collection.db, collection.name)
+    cursor = new TestCursor(collection.db, collection.name, {})
     jest.clearAllMocks()
   })
 
