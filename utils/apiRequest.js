@@ -73,6 +73,7 @@ async function apiRequest(db, apiPath, method, body = {}, withSession = false) {
       throw new DbError(
         `Request ${reqId} to ${apiPath} failed with code ${err.response.status}: ${err.response.data.message}`,
         reqId,
+        err.response.status,
         { cause: err }
       )
     }
@@ -81,7 +82,7 @@ async function apiRequest(db, apiPath, method, body = {}, withSession = false) {
 
   if (!res.data.success) {
     const reqId = res.data.requestId || res.headers[REQUEST_ID_HEADER]
-    throw new DbError(`Request ${reqId} to ${apiPath} failed: ${res.data.message}`, reqId)
+    throw new DbError(`Request ${reqId} to ${apiPath} failed: ${res.data.message}`, reqId, res.status)
   }
   return res.data.data
 }
