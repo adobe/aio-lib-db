@@ -9,15 +9,16 @@ const { EJSON } = require("bson")
  * @param {string} apiPath db api url past <ENDPOINT>/v1/
  * @param {Object=} params
  * @param {Object=} options
+ * @param {boolean=} withSession
  * @returns {Promise<*>}
  * @throws {DbError}
  */
-async function apiPost(db, apiPath, params = {}, options = {}) {
+async function apiPost(db, apiPath, params = {}, options = {}, withSession = false) {
   const body = params
   if (Object.keys(options).length > 0) {
     body.options = options
   }
-  return await apiRequest(db, `v1/${apiPath}`, 'POST', body)
+  return await apiRequest(db, `v1/${apiPath}`, 'POST', body, withSession)
 }
 
 /**
@@ -25,11 +26,12 @@ async function apiPost(db, apiPath, params = {}, options = {}) {
  *
  * @param {DbBase} db
  * @param {string} apiPath db api url past <ENDPOINT>/v1/
+ * @param {boolean=} withSession
  * @returns {Promise<*>}
  * @throws {DbError}
  */
-async function apiGet(db, apiPath) {
-  return await apiRequest(db, `v1/${apiPath}`, 'GET')
+async function apiGet(db, apiPath, withSession = false) {
+  return await apiRequest(db, `v1/${apiPath}`, 'GET', undefined, withSession)
 }
 
 /**
@@ -39,13 +41,15 @@ async function apiGet(db, apiPath) {
  * @param {string} apiPath
  * @param {string} method
  * @param {Object=} body
+ * @param {boolean=} withSession
  * @returns {Promise<*>}
  * @throws {DbError}
  */
-async function apiRequest(db, apiPath, method, body = {}) {
+async function apiRequest(db, apiPath, method, body = {}, withSession = false) {
   const fullUrl = `${ENDPOINT_URL}/${apiPath}`
   let res
   try {
+    const axiosClient = withSession ? db.axiosClientWithSession : db.axiosClientWithoutSession
     const creds = db.runtimeAuth.split(/:(.*)/,2)
     /** @type {Object}
      * @mixes AxiosRequestConfig */
@@ -57,10 +61,10 @@ async function apiRequest(db, apiPath, method, body = {}) {
       }
     }
     if (method === 'GET') {
-      res = await db.axiosClient.get(fullUrl, reqConfig)
+      res = await axiosClient.get(fullUrl, reqConfig)
     }
     else {
-      res = await db.axiosClient.post(fullUrl, EJSON.stringify(body, { relaxed: false }), reqConfig)
+      res = await axiosClient.post(fullUrl, EJSON.stringify(body, { relaxed: false }), reqConfig)
     }
   }
   catch (err) {

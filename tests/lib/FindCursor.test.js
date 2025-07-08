@@ -1,14 +1,16 @@
 const { getDb } = require("../testingUtils")
-const { default: axios } = require('axios')
 const { CURSOR_INIT_ERR_MESSAGE } = require("../../lib/constants")
-
-const axiosClient = axios.create()
 
 describe('FindCursor tests', () => {
   let collection
+  let sessClient
+  let nonSessClient
 
   beforeEach(async () => {
-    const client = await getDb().connect()
+    const db = getDb()
+    sessClient = db.axiosClientWithSession
+    nonSessClient = db.axiosClientWithoutSession
+    const client = await db.connect()
     collection = client.collection('testCollection')
     jest.clearAllMocks()
   })
@@ -25,7 +27,7 @@ describe('FindCursor tests', () => {
     // Initialize the cursor to trigger the request
     await cursor.hasNext()
 
-    expect(axiosClient).toHaveCalledServicePost(
+    expect(sessClient).toHaveCalledServicePost(
       'v1/collection/testCollection/find',
       {
         filter: { field: { $gte: 'value3' } },
@@ -38,6 +40,7 @@ describe('FindCursor tests', () => {
         }
       }
     )
+    expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/find')
   })
 
   test('chained functions cannot change cursor after it has been initialized', async () => {
