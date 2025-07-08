@@ -3,16 +3,15 @@ const { AxiosError } = jest.requireActual("axios")
 const { apiGet } = require("../../utils/apiRequest")
 
 describe('API Request Tests', () => {
-  let axiosClient
+  let db
 
   beforeEach(async () => {
-    const db = getDb()
-    axiosClient = db.axiosClientWithoutSession
+    db = getDb()
     jest.clearAllMocks()
   })
 
   test('apiRequest attaches http code when error occurs', async () => {
-    axiosClient.get.mockImplementationOnce(() => {
+    db.axiosClientWithoutSession.get.mockImplementationOnce(() => {
       return Promise.reject(new AxiosError(
         'Not Found',
         undefined,
@@ -28,7 +27,7 @@ describe('API Request Tests', () => {
   })
 
   test('apiRequest attaches http code when response is not successful', async () => {
-    axiosClient.get.mockImplementationOnce(() => {
+    db.axiosClientWithoutSession.get.mockImplementationOnce(() => {
       return Promise.resolve({ data: { requestId: 'id', success: false, message: 'Request Failed' }, status: 200 })
     })
 
