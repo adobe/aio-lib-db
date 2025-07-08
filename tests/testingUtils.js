@@ -70,6 +70,8 @@ function toEqualEjson(actualString, expectedString) {
 /**
  * Custom jest tester to check post requests to service api.
  * Functions as expect(axiosClient.post).toHaveBeenCalledWith(`${ENDPOINT_URL}/${route}`, body, <runtime/auth headers>)
+ * Not passing the body parameter will only check the URL and headers
+ * If the times parameter is provided, it will check that the request was made exactly that many times.
  *
  * Example use:
  *   await dbCollection.hideIndex('PriceIndex')
@@ -77,16 +79,27 @@ function toEqualEjson(actualString, expectedString) {
  *
  * @param {AxiosInstance} axiosClient
  * @param {string} route
- * @param {Object} body
+ * @param {Object=} body
+ * @param {number=} times
  */
-function toHaveCalledServicePost(axiosClient, route, body) {
+function toHaveCalledServicePost(axiosClient, route, body = undefined, times = undefined) {
   const url = `${ENDPOINT_URL}/${route}`
-  body = EJSON.stringify(body, { relaxed: false })
+  const bodyMatcher = body ? expect.toEqualEjson(EJSON.stringify(body, { relaxed: false })) : expect.anything()
   try {
-    expect(axiosClient.post).toHaveBeenCalledWith(url, expect.toEqualEjson(body), TEST_REQ_CONFIG)
-    return {
-      pass: true,
-      message: () => `expected axios not to make a POST request to ${url} with body: ${body}`
+    if (times !== undefined) {
+      const calls = axiosClient.post.mock.calls.filter(call => call[0] === url && this.equals(call[1], bodyMatcher))
+      expect(calls).toHaveLength(times)
+      return {
+        pass: true,
+        message: () => `expected axios not to make a POST request ${times} times to ${url} with body: ${body || '<anything>'}`
+      }
+    }
+    else {
+      expect(axiosClient.post).toHaveBeenCalledWith(url, bodyMatcher, TEST_REQ_CONFIG)
+      return {
+        pass: true,
+        message: () => `expected axios not to make a POST request to ${url} with body: ${body || '<anything>'}`
+      }
     }
   }
   catch (e) {
