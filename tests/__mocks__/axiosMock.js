@@ -119,6 +119,10 @@ const POST_ENDPOINT_RESULTS = [
     result: OBJECT_RESPONSE
   },
   {
+    route: RegExp(`^v1/collection/[^/]+/findArray$`),
+    result: ARRAY_RESPONSE
+  },
+  {
     route: RegExp(`^v1/collection/[^/]+/deleteOne$`),
     result: OBJECT_RESPONSE
   },

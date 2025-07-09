@@ -1,5 +1,4 @@
 const { getDb } = require("../testingUtils")
-const { default: axios } = require('axios')
 
 describe('DbCollection tests', () => {
   let collection
@@ -96,6 +95,13 @@ describe('DbCollection tests', () => {
     await collection.findOneAndDelete(filter)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/findOneAndDelete', { filter: filter })
     expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/findOneAndDelete')
+  })
+
+  test('findArray calls the appropriate endpoint', async () => {
+    const filter = { name: 'Item1' }
+    await collection.findArray(filter)
+    expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/findArray', { filter: filter })
+    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/findArray')
   })
 
   test('deleteOne calls the appropriate endpoint', async () => {

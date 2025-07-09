@@ -147,7 +147,53 @@ function toHaveCalledServiceGet(axiosClient, route) {
   }
 }
 
-expect.extend({ toEqualEjson, toHaveCalledServicePost, toHaveCalledServiceGet })
+/**
+ * Custom jest matcher to check if a function throws an error with specific properties.
+ *
+ * errMatcher accepts either a function that takes the error object and returns a boolean
+ * or an object with the expected properties as key-value pairs.
+ *
+ * Example use:
+ *   await expect(async () => {
+ *     await apiGet(db, 'unrecognized/endpoint')
+ *   }).toThrowErrorWithProperties({ httpStatusCode: 404 }, 'DbError')
+ *
+ * @param {function} asyncFn
+ * @param {function|Object} errMatcher
+ * @param {string=} errorType
+ */
+async function toThrowErrorWithProperties(asyncFn, errMatcher, errorType = '') {
+  try {
+    await asyncFn()
+    return { pass: false, message: () => `expected error to be thrown` }
+  }
+  catch (e) {
+    const errOut = JSON.stringify(e)
+    if (errorType && e.constructor.name !== errorType) {
+      return { pass: false, message: () => `expected error to be of type ${errorType}, but got ${e.constructor.name}` }
+    }
+    if (typeof errMatcher === 'function') {
+      if (errMatcher(e)) {
+        return { pass: true, message: () => `expected error not to match, but got ${errOut}` }
+      }
+      else {
+        return { pass: false, message: () => `expected error to match, but got ${errOut}` }
+      }
+    }
+    else {
+      const matcherOut = JSON.stringify(errMatcher)
+      const properties = Object.keys(errMatcher)
+      for (const prop of properties) {
+        if (!e.hasOwnProperty(prop) || !this.equals(e[prop], errMatcher[prop])) {
+          return { pass: false, message: () => `expected error to have properties ${matcherOut}, but got ${errOut}` }
+        }
+      }
+      return { pass: true, message: () => `expected error not to have properties ${matcherOut}, but got ${errOut}` }
+    }
+  }
+}
+
+expect.extend({ toEqualEjson, toHaveCalledServicePost, toHaveCalledServiceGet, toThrowErrorWithProperties })
 
 module.exports = {
   getDb
