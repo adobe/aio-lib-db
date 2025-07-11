@@ -172,6 +172,10 @@ const stream = cursor.stream();
 stream.on('data', (doc) => {
   console.log(doc);
 });
+
+// Check cursor properties
+console.log('Cursor ID:', cursor.id);
+console.log('Is closed:', cursor.closed);
 ```
 
 ### Cursor Transformations
@@ -221,6 +225,18 @@ const cursor = collection.aggregate()
   .project({ category: '$_id', total: 1, _id: 0 });
 
 const topCategories = await cursor.toArray();
+
+// Geospatial aggregation example
+const nearbyStores = await collection.aggregate()
+  .geoNear({
+    near: { type: 'Point', coordinates: [-122.4194, 37.7749] }, // San Francisco
+    distanceField: 'distance',
+    maxDistance: 1000, // 1km radius
+    spherical: true
+  })
+  .match({ status: 'open' })
+  .limit(10)
+  .toArray();
 ```
 
 ### Advanced Aggregation
@@ -236,6 +252,13 @@ const cursor = collection.aggregate()
     as: 'category'
   })
   .unwind('$category')
+  .redact({
+    $cond: {
+      if: { $eq: ['$category.status', 'active'] },
+      then: '$$DESCEND',
+      else: '$$PRUNE'
+    }
+  })
   .group({
     _id: '$category.name',
     totalSales: { $sum: '$amount' },
@@ -243,7 +266,8 @@ const cursor = collection.aggregate()
     orderCount: { $sum: 1 }
   })
   .sort({ totalSales: -1 })
-  .limit(5);
+  .limit(5)
+  .out('sales_summary'); // Output results to a new collection
 ```
 
 ---
@@ -262,19 +286,25 @@ const indexes = await collection.getIndexes();
 
 // Drop an index
 await collection.dropIndex('email_1');
+
+// Hide an index (keeps it but makes it unusable)
+await collection.hideIndex('temp_index');
+
+// Unhide a previously hidden index
+await collection.unhideIndex('temp_index');
 ```
 
 ### Counting Documents
 
 ```javascript
-// Count all documents
-const total = await collection.estimatedDocumentCount();
+// Fast count estimate (uses collection metadata)
+const estimate = await collection.estimatedDocumentCount();
 
-// Count with filter
+// Accurate count with filter (scans documents)
 const activeUsers = await collection.countDocuments({ status: 'active' });
 
-// Count using cursor
-const count = await collection.find({ status: 'active' }).count();
+// Count all documents accurately
+const totalExact = await collection.countDocuments({});
 ```
 
 ### Bulk Operations
@@ -288,6 +318,36 @@ const operations = [
 ];
 
 const result = await collection.bulkWrite(operations);
+```
+
+### Collection Management
+
+```javascript
+// Drop a collection (permanently delete)
+await collection.drop();
+
+// Rename a collection
+await collection.renameCollection('new_collection_name');
+
+// Validate collection integrity
+const validation = await collection.validate();
+if (!validation.valid) {
+  console.error('Collection validation failed:', validation.errors);
+}
+
+// Create a new collection with options
+const newCollection = await client.createCollection('analytics', {
+  validator: {
+    $jsonSchema: {
+      required: ['userId', 'action', 'timestamp'],
+      properties: {
+        userId: { type: 'string' },
+        action: { type: 'string' },
+        timestamp: { type: 'date' }
+      }
+    }
+  }
+});
 ```
 
 ### Query Options
@@ -412,13 +472,24 @@ const report = await collection.aggregate()
 
 **Utility Operations:**
 - `countDocuments(filter?, options?)` - Count documents
+- `estimatedDocumentCount(options?)` - Estimate document count from metadata
 - `distinct(field, filter?, options?)` - Get distinct values
 - `bulkWrite(operations, options?)` - Bulk operations
+
+**Statistics & Monitoring:**
+- `stats(options?)` - Get collection statistics
+- `validate(options?)` - Validate collection for corruption
 
 **Index Operations:**
 - `createIndex(specification, options?)` - Create index
 - `getIndexes()` - List indexes
 - `dropIndex(indexName, options?)` - Drop index
+- `hideIndex(indexName)` - Hide an index (make it unusable but don't delete)
+- `unhideIndex(indexName)` - Unhide a previously hidden index
+
+**Collection Management:**
+- `drop(options?)` - Drop the collection
+- `renameCollection(newName, options?)` - Rename collection
 
 ### FindCursor
 
@@ -428,19 +499,22 @@ const report = await collection.aggregate()
 - `project(projection)` - Set field projection
 - `limit(limit)` - Set result limit
 - `skip(skip)` - Set number to skip
-- `hint(hint)` - Set index hint
 - `batchSize(size)` - Set batch size
 
 **Iteration:**
 - `hasNext()` - Check if more results available
 - `next()` - Get next document
 - `toArray()` - Get all results as array
-- `count()` - Count matching documents
+
+**Properties:**
+- `id` - Get cursor ID
+- `closed` - Check if cursor is closed and exhausted
 
 **Utilities:**
 - `map(transform)` - Transform documents
 - `stream(transform?)` - Get readable stream
 - `explain()` - Get query execution plan
+- `batchSize(size)` - Set batch size for iteration
 
 ### AggregateCursor
 
@@ -453,6 +527,9 @@ const report = await collection.aggregate()
 - `skip(skip)` - Add $skip stage
 - `lookup(lookupSpec)` - Add $lookup stage
 - `unwind(path)` - Add $unwind stage
+- `out(outSpec)` - Add $out stage (output to collection)
+- `redact(redactSpec)` - Add $redact stage (conditional filtering)
+- `geoNear(geoNearSpec)` - Add $geoNear stage (geospatial queries)
 - `addStage(stage)` - Add custom stage
 
 **Iteration:** (Same as FindCursor)
