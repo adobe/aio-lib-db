@@ -189,12 +189,6 @@ describe('DbCollection tests', () => {
     expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/stats')
   })
 
-  test('validate calls the appropriate endpoint', async () => {
-    await collection.validate()
-    expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/validate', {})
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/validate')
-  })
-
   test('createIndex calls the appropriate endpoint', async () => {
     await collection.createIndex({ category: 1, price: -1 }, { name: 'CategoryPriceIndex' })
     expect(nonSessClient).toHaveCalledServicePost(
@@ -216,18 +210,6 @@ describe('DbCollection tests', () => {
     await collection.getIndexes()
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/getIndexes', {})
     expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getIndexes')
-  })
-
-  test('hideIndex calls the appropriate endpoint', async () => {
-    await collection.hideIndex('PriceIndex')
-    expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/hideIndex', { index: 'PriceIndex' })
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/hideIndex')
-  })
-
-  test('unhideIndex calls the appropriate endpoint', async () => {
-    await collection.unhideIndex('PriceIndex')
-    expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/unhideIndex', { index: 'PriceIndex' })
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/unhideIndex')
   })
 
   test('dropIndex calls the appropriate endpoint', async () => {

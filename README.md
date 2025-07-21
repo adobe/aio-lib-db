@@ -286,12 +286,6 @@ const indexes = await collection.getIndexes();
 
 // Drop an index
 await collection.dropIndex('email_1');
-
-// Hide an index (keeps it but makes it unusable)
-await collection.hideIndex('temp_index');
-
-// Unhide a previously hidden index
-await collection.unhideIndex('temp_index');
 ```
 
 ### Counting Documents
@@ -328,12 +322,6 @@ await collection.drop();
 
 // Rename a collection
 await collection.renameCollection('new_collection_name');
-
-// Validate collection integrity
-const validation = await collection.validate();
-if (!validation.valid) {
-  console.error('Collection validation failed:', validation.errors);
-}
 
 // Create a new collection with options
 const newCollection = await client.createCollection('analytics', {
@@ -478,14 +466,11 @@ const report = await collection.aggregate()
 
 **Statistics & Monitoring:**
 - `stats(options?)` - Get collection statistics
-- `validate(options?)` - Validate collection for corruption
 
 **Index Operations:**
 - `createIndex(specification, options?)` - Create index
 - `getIndexes()` - List indexes
 - `dropIndex(indexName, options?)` - Drop index
-- `hideIndex(indexName)` - Hide an index (make it unusable but don't delete)
-- `unhideIndex(indexName)` - Unhide a previously hidden index
 
 **Collection Management:**
 - `drop(options?)` - Drop the collection

@@ -106,4 +106,28 @@ describe('AggregateCursor tests', () => {
     expect(() => cursor.sort({ award_count: -1 })).toThrow(CURSOR_INIT_ERR_MESSAGE)
     expect(() => cursor.out('directors_aggregate')).toThrow(CURSOR_INIT_ERR_MESSAGE)
   })
+
+  test('cursor.explain() immediately calls the api and closes the cursor', async () => {
+    const cursor = collection.aggregate()
+    await cursor.explain()
+    expect(sessClient).toHaveCalledServicePost(
+      'v1/collection/testCollection/aggregate',
+      { pipeline: [], options: { explain: true } }
+    )
+    expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/aggregate')
+    // After calling explain, the cursor should be closed and not usable
+    expect(cursor.closed).toBe(true)
+    expect(await cursor.hasNext()).toBe(false)
+    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
+    expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
+  })
+
+  test('cursor.explain(), cursor.batchSize(), and cursor.map() cannot be called after initialization', async () => {
+    const cursor = collection.aggregate()
+    await cursor.hasNext() // Initialize the cursor
+
+    await expect(cursor.explain()).rejects.toThrow(CURSOR_INIT_ERR_MESSAGE)
+    expect(() => cursor.batchSize(10)).toThrow(CURSOR_INIT_ERR_MESSAGE)
+    expect(() => cursor.map(doc => doc)).toThrow(CURSOR_INIT_ERR_MESSAGE)
+  })
 })
