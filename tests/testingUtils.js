@@ -88,8 +88,8 @@ function toEqualEjson(actualString, expectedString) {
  * If the times parameter is provided, it will check that the request was made exactly that many times.
  *
  * Example use:
- *   await dbCollection.hideIndex('PriceIndex')
- *   expect(axiosClient).toHaveCalledServicePost('v1/collection/testCollection/hideIndex', { index: 'PriceIndex' })
+ *   await dbCollection.dropIndex('PriceIndex')
+ *   expect(axiosClient).toHaveCalledServicePost('v1/collection/testCollection/dropIndex', { index: 'PriceIndex' })
  *
  * @param {AxiosInstance} axiosClient
  * @param {string} route

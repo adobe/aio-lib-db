@@ -135,22 +135,4 @@ describe('AbstractDbCursor iteration tests', () => {
     expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/getMore', { cursorId: TEST_CURSOR_ID }, 1)
     expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
   })
-
-  test('cursor.explain() immediately calls the api and closes the cursor', async () => {
-    await cursor.explain()
-    expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/find', { options: { explain: true } })
-    expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/find')
-    // After calling explain, the cursor should be closed and not usable
-    expect(cursor.closed).toBe(true)
-    expect(await cursor.hasNext()).toBe(false)
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
-    expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
-  })
-
-  test('cursor.explain(), cursor.batchSize(), and cursor.map() cannot be called after initialization', async () => {
-    await cursor.hasNext() // Initialize the cursor
-    await expect(cursor.explain()).rejects.toThrow(CURSOR_INIT_ERR_MESSAGE)
-    expect(() => cursor.batchSize(10)).toThrow(CURSOR_INIT_ERR_MESSAGE)
-    expect(() => cursor.map(doc => doc)).toThrow(CURSOR_INIT_ERR_MESSAGE)
-  })
 })

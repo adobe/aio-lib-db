@@ -78,14 +78,6 @@ const POST_ENDPOINT_RESULTS = [
     result: OBJECT_RESPONSE
   },
   {
-    route: RegExp(`^v1/collection/[^/]+/hideIndex$`),
-    result: OBJECT_RESPONSE
-  },
-  {
-    route: RegExp(`^v1/collection/[^/]+/unhideIndex$`),
-    result: OBJECT_RESPONSE
-  },
-  {
     route: RegExp(`^v1/collection/[^/]+/dropIndex$`),
     result: OBJECT_RESPONSE
   },
@@ -171,10 +163,6 @@ const POST_ENDPOINT_RESULTS = [
   },
   {
     route: RegExp(`^v1/collection/[^/]+/stats$`),
-    result: OBJECT_RESPONSE
-  },
-  {
-    route: RegExp(`^v1/collection/[^/]+/validate$`),
     result: OBJECT_RESPONSE
   },
   {
