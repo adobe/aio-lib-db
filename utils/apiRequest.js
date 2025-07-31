@@ -17,50 +17,49 @@ const { EJSON } = require("bson")
  * Execute a POST request to the App Builder Database Service API and return the data field from the result
  *
  * @param {DbBase} db
+ * @param {AxiosInstance} axiosClient
  * @param {string} apiPath db api url past <ENDPOINT>/v1/
  * @param {Object=} params
  * @param {Object=} options
- * @param {boolean=} withSession
  * @returns {Promise<*>}
  * @throws {DbError}
  */
-async function apiPost(db, apiPath, params = {}, options = {}, withSession = false) {
+async function apiPost(db, axiosClient, apiPath, params = {}, options = {}) {
   const body = params
   if (Object.keys(options).length > 0) {
     body.options = options
   }
-  return await apiRequest(db, `v1/${apiPath}`, 'POST', body, withSession)
+  return await apiRequest(db, axiosClient, `v1/${apiPath}`, 'POST', body)
 }
 
 /**
  * Execute a GET request to the App Builder Database Service API and return the data field from the result
  *
  * @param {DbBase} db
+ * @param {AxiosInstance} axiosClient
  * @param {string} apiPath db api url past <ENDPOINT>/v1/
- * @param {boolean=} withSession
  * @returns {Promise<*>}
  * @throws {DbError}
  */
-async function apiGet(db, apiPath, withSession = false) {
-  return await apiRequest(db, `v1/${apiPath}`, 'GET', undefined, withSession)
+async function apiGet(db, axiosClient, apiPath) {
+  return await apiRequest(db, axiosClient, `v1/${apiPath}`, 'GET')
 }
 
 /**
  * Internal helper method to construct and execute a request to the App Builder Database Service API
  *
  * @param {DbBase} db
+ * @param {AxiosInstance} axiosClient
  * @param {string} apiPath
  * @param {string} method
  * @param {Object=} body
- * @param {boolean=} withSession
  * @returns {Promise<*>}
  * @throws {DbError}
  */
-async function apiRequest(db, apiPath, method, body = {}, withSession = false) {
+async function apiRequest(db, axiosClient, apiPath, method, body = {}) {
   const fullUrl = `${ENDPOINT_URL}/${apiPath}`
   let res
   try {
-    const axiosClient = withSession ? db.axiosClientWithSession : db.axiosClientWithoutSession
     const creds = db.runtimeAuth.split(/:(.*)/,2)
     /** @type {Object}
      * @mixes AxiosRequestConfig */

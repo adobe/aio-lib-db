@@ -9,17 +9,15 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-const { getDb } = require("../testingUtils")
+const { getDb, getAxiosFromCursor } = require("../testingUtils")
 
 describe('DbCollection tests', () => {
   let collection
-  let sessClient
   let nonSessClient
 
   beforeEach(async () => {
     const db = getDb()
-    sessClient = db.axiosClientWithSession
-    nonSessClient = db.axiosClientWithoutSession
+    nonSessClient = db.axiosClient
     const client = await db.connect()
     collection = client.collection('testCollection')
     jest.clearAllMocks()
@@ -29,21 +27,18 @@ describe('DbCollection tests', () => {
     const doc = { name: 'Item1', price: 100 }
     await collection.insertOne(doc)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/insertOne', { document: doc })
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/insertOne')
   })
 
   test('insertMany calls the appropriate endpoint', async () => {
     const docs = [{ name: 'Item1', price: 100 }, { name: 'Item2', price: 200 }]
     await collection.insertMany(docs)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/insertMany', { documents: docs })
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/insertMany')
   })
 
   test('findOne calls the appropriate endpoint', async () => {
     const filter = { name: 'Item1' }
     await collection.findOne(filter)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/findOne', { filter: filter })
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/findOne')
   })
 
   test('replaceOne calls the appropriate endpoint', async () => {
@@ -54,7 +49,6 @@ describe('DbCollection tests', () => {
       'v1/collection/testCollection/replaceOne',
       { filter: filter, replacement: replacement }
     )
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/replaceOne')
   })
 
   test('updateOne calls the appropriate endpoint', async () => {
@@ -65,7 +59,6 @@ describe('DbCollection tests', () => {
       'v1/collection/testCollection/updateOne',
       { filter: filter, update: update }
     )
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/updateOne')
   })
 
   test('updateMany calls the appropriate endpoint', async () => {
@@ -76,7 +69,6 @@ describe('DbCollection tests', () => {
       'v1/collection/testCollection/updateMany',
       { filter: filter, update: update }
     )
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/updateMany')
   })
 
   test('findOneAndUpdate calls the appropriate endpoint', async () => {
@@ -87,7 +79,6 @@ describe('DbCollection tests', () => {
       'v1/collection/testCollection/findOneAndUpdate',
       { filter: filter, update: update }
     )
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/findOneAndUpdate')
   })
 
   test('findOneAndReplace calls the appropriate endpoint', async () => {
@@ -98,42 +89,36 @@ describe('DbCollection tests', () => {
       'v1/collection/testCollection/findOneAndReplace',
       { filter: filter, replacement: replacement }
     )
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/findOneAndReplace')
   })
 
   test('findOneAndDelete calls the appropriate endpoint', async () => {
     const filter = { name: 'Item1' }
     await collection.findOneAndDelete(filter)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/findOneAndDelete', { filter: filter })
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/findOneAndDelete')
   })
 
   test('findArray calls the appropriate endpoint', async () => {
     const filter = { name: 'Item1' }
     await collection.findArray(filter)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/findArray', { filter: filter })
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/findArray')
   })
 
   test('deleteOne calls the appropriate endpoint', async () => {
     const filter = { name: 'Item1' }
     await collection.deleteOne(filter)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/deleteOne', { filter: filter })
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/deleteOne')
   })
 
   test('deleteMany calls the appropriate endpoint', async () => {
     const filter = { category: 'electronics' }
     await collection.deleteMany(filter)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/deleteMany', { filter: filter })
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/deleteMany')
   })
 
   test('countDocuments calls the appropriate endpoint', async () => {
     const filter = { category: 'electronics' }
     await collection.countDocuments(filter)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/countDocuments', { filter: filter })
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/countDocuments')
   })
 
   test('aggregate calls the appropriate endpoint', async () => {
@@ -143,6 +128,7 @@ describe('DbCollection tests', () => {
     ]
     // .aggregate() doesn't make a request until iteration actually starts
     const cursor = collection.aggregate(pipeline)
+    const sessClient = getAxiosFromCursor(cursor)
     expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/aggregate')
     await cursor.hasNext()
     expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/aggregate', { pipeline: pipeline })
@@ -153,7 +139,6 @@ describe('DbCollection tests', () => {
   test('drop calls the appropriate endpoint', async () => {
     await collection.drop()
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/drop', {})
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/drop')
   })
 
   test('distinct calls the appropriate endpoint', async () => {
@@ -164,13 +149,11 @@ describe('DbCollection tests', () => {
       'v1/collection/testCollection/distinct',
       { field: field, filter: filter }
     )
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/distinct')
   })
 
   test('estimatedDocumentCount calls the appropriate endpoint', async () => {
     await collection.estimatedDocumentCount()
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/estimatedDocumentCount', {})
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/estimatedDocumentCount')
   })
 
   test('renameCollection calls the appropriate endpoint', async () => {
@@ -180,13 +163,11 @@ describe('DbCollection tests', () => {
       'v1/collection/testCollection/renameCollection',
       { name: newCollectionName }
     )
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/renameCollection')
   })
 
   test('stats calls the appropriate endpoint', async () => {
     await collection.stats()
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/stats', {})
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/stats')
   })
 
   test('createIndex calls the appropriate endpoint', async () => {
@@ -203,19 +184,16 @@ describe('DbCollection tests', () => {
         }
       }
     )
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/createIndex')
   })
 
   test('getIndexes calls the appropriate endpoint', async () => {
     await collection.getIndexes()
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/getIndexes', {})
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getIndexes')
   })
 
   test('dropIndex calls the appropriate endpoint', async () => {
     await collection.dropIndex('PriceIndex')
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/dropIndex', { index: 'PriceIndex' })
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/dropIndex')
   })
 
   test('bulkWrite calls the appropriate endpoint', async () => {
@@ -226,12 +204,12 @@ describe('DbCollection tests', () => {
     ]
     await collection.bulkWrite(operations)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/bulkWrite')
-    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/bulkWrite')
   })
 
   test('find calls the appropriate endpoint', async () => {
     // .find() doesn't make a request until iteration actually starts
     const cursor = await collection.find({ name: 'Item1' })
+    const sessClient = getAxiosFromCursor(cursor)
     expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/find')
     await cursor.hasNext()
     expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/find', { filter: { name: 'Item1' } })

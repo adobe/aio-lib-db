@@ -66,10 +66,6 @@ const GET_ENDPOINT_RESULTS = [
 
 const POST_ENDPOINT_RESULTS = [
   {
-    route: RegExp(`^v1/db/connect$`),
-    result: VOID_RESPONSE
-  },
-  {
     route: RegExp(`^v1/collection/[^/]+/getIndexes$`),
     result: ARRAY_RESPONSE
   },
@@ -235,21 +231,16 @@ class AxiosMock {
   })
 }
 
-let mockSessionClient
-let mockClientWithoutSession
 module.exports = {
   default: {
     create: jest.fn((config) => {
       if (config?.httpAgent instanceof HttpCookieAgent || config?.httpsAgent instanceof HttpsCookieAgent) {
-        if (!mockSessionClient) {
-          mockSessionClient = new AxiosMock()
-          mockSessionClient.hasSession = true
-        }
+        const mockSessionClient = new AxiosMock()
+        mockSessionClient.hasSession = true
         return mockSessionClient
       }
-      if (!mockClientWithoutSession) {
-        mockClientWithoutSession = new AxiosMock()
-      }
+      const mockClientWithoutSession = new AxiosMock()
+      mockClientWithoutSession.hasSession = false
       return mockClientWithoutSession
     })
   },

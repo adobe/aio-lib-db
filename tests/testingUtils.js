@@ -35,15 +35,21 @@ beforeEach(() => {
 
 function getDb() {
   const db = new DbBase(TEST_NAMESPACE, TEST_AUTH)
-  // Ensure that axios clients are created both with and without session cookie tracking
+  // Ensure that an axios client has been created without session cookie tracking
+  expect(axios.create).toHaveBeenCalledWith()
+  expect(db.axiosClient).toHaveProperty('hasSession', false)
+  return db
+}
+
+function getAxiosFromCursor(cursor) {
+  // Ensure that an axios client has been created with session cookie tracking and is attached to the cursor
   expect(axios.create).toHaveBeenCalledWith({
     httpAgent: expect.any(HttpCookieAgent),
     httpsAgent: expect.any(HttpsCookieAgent)
   })
-  expect(axios.create).toHaveBeenCalledWith()
-  expect(db.axiosClientWithoutSession).toHaveProperty('hasSession', false)
-  expect(db.axiosClientWithSession).toHaveProperty('hasSession', true)
-  return db
+  const axiosClient = cursor._axiosClient
+  expect(axiosClient).toHaveProperty('hasSession', true)
+  return axiosClient
 }
 
 /**
@@ -207,5 +213,6 @@ async function toThrowErrorWithProperties(asyncFn, errMatcher, errorType = '') {
 expect.extend({ toEqualEjson, toHaveCalledServicePost, toHaveCalledServiceGet, toThrowErrorWithProperties })
 
 module.exports = {
-  getDb
+  getDb,
+  getAxiosFromCursor
 }

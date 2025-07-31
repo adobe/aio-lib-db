@@ -9,18 +9,16 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-const { getDb } = require("../testingUtils")
+const { getDb, getAxiosFromCursor } = require("../testingUtils")
 const { CURSOR_INIT_ERR_MESSAGE } = require("../../lib/constants")
 
 describe('AggregateCursor tests', () => {
   let collection
-  let sessClient
   let nonSessClient
 
   beforeEach(async () => {
     const db = getDb()
-    sessClient = db.axiosClientWithSession
-    nonSessClient = db.axiosClientWithoutSession
+    nonSessClient = db.axiosClient
     const client = await db.connect()
     collection = client.collection('testCollection')
     jest.clearAllMocks()
@@ -46,6 +44,7 @@ describe('AggregateCursor tests', () => {
       .sort({ 'award_count': -1 })
       .out('directors_aggregate')
       .batchSize(5)
+    const sessClient = getAxiosFromCursor(cursor)
 
     // Initialize the cursor to trigger the request
     await cursor.hasNext()
@@ -107,14 +106,15 @@ describe('AggregateCursor tests', () => {
     expect(() => cursor.out('directors_aggregate')).toThrow(CURSOR_INIT_ERR_MESSAGE)
   })
 
-  test('cursor.explain() immediately calls the api and closes the cursor', async () => {
+  test('cursor.explain() immediately calls the api without using a session', async () => {
     const cursor = collection.aggregate()
     await cursor.explain()
-    expect(sessClient).toHaveCalledServicePost(
+    const sessClient = getAxiosFromCursor(cursor)
+    expect(nonSessClient).toHaveCalledServicePost(
       'v1/collection/testCollection/aggregate',
       { pipeline: [], options: { explain: true } }
     )
-    expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/aggregate')
+    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/aggregate')
     // After calling explain, the cursor should be closed and not usable
     expect(cursor.closed).toBe(true)
     expect(await cursor.hasNext()).toBe(false)
