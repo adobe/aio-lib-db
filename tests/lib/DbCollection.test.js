@@ -27,18 +27,21 @@ describe('DbCollection tests', () => {
     const doc = { name: 'Item1', price: 100 }
     await collection.insertOne(doc)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/insertOne', { document: doc })
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('insertMany calls the appropriate endpoint', async () => {
     const docs = [{ name: 'Item1', price: 100 }, { name: 'Item2', price: 200 }]
     await collection.insertMany(docs)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/insertMany', { documents: docs })
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('findOne calls the appropriate endpoint', async () => {
     const filter = { name: 'Item1' }
     await collection.findOne(filter)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/findOne', { filter: filter })
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('replaceOne calls the appropriate endpoint', async () => {
@@ -49,6 +52,7 @@ describe('DbCollection tests', () => {
       'v1/collection/testCollection/replaceOne',
       { filter: filter, replacement: replacement }
     )
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('updateOne calls the appropriate endpoint', async () => {
@@ -59,6 +63,7 @@ describe('DbCollection tests', () => {
       'v1/collection/testCollection/updateOne',
       { filter: filter, update: update }
     )
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('updateMany calls the appropriate endpoint', async () => {
@@ -69,6 +74,7 @@ describe('DbCollection tests', () => {
       'v1/collection/testCollection/updateMany',
       { filter: filter, update: update }
     )
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('findOneAndUpdate calls the appropriate endpoint', async () => {
@@ -79,6 +85,7 @@ describe('DbCollection tests', () => {
       'v1/collection/testCollection/findOneAndUpdate',
       { filter: filter, update: update }
     )
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('findOneAndReplace calls the appropriate endpoint', async () => {
@@ -89,36 +96,42 @@ describe('DbCollection tests', () => {
       'v1/collection/testCollection/findOneAndReplace',
       { filter: filter, replacement: replacement }
     )
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('findOneAndDelete calls the appropriate endpoint', async () => {
     const filter = { name: 'Item1' }
     await collection.findOneAndDelete(filter)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/findOneAndDelete', { filter: filter })
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('findArray calls the appropriate endpoint', async () => {
     const filter = { name: 'Item1' }
     await collection.findArray(filter)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/findArray', { filter: filter })
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('deleteOne calls the appropriate endpoint', async () => {
     const filter = { name: 'Item1' }
     await collection.deleteOne(filter)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/deleteOne', { filter: filter })
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('deleteMany calls the appropriate endpoint', async () => {
     const filter = { category: 'electronics' }
     await collection.deleteMany(filter)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/deleteMany', { filter: filter })
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('countDocuments calls the appropriate endpoint', async () => {
     const filter = { category: 'electronics' }
     await collection.countDocuments(filter)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/countDocuments', { filter: filter })
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('aggregate calls the appropriate endpoint', async () => {
@@ -134,11 +147,14 @@ describe('DbCollection tests', () => {
     expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/aggregate', { pipeline: pipeline })
     expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/aggregate')
     expect(cursor).toHaveProperty('constructor.name', 'AggregateCursor')
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
+    expect(await sessClient.getSessionCookies()).toHaveLength(1)
   })
 
   test('drop calls the appropriate endpoint', async () => {
     await collection.drop()
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/drop', {})
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('distinct calls the appropriate endpoint', async () => {
@@ -149,11 +165,13 @@ describe('DbCollection tests', () => {
       'v1/collection/testCollection/distinct',
       { field: field, filter: filter }
     )
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('estimatedDocumentCount calls the appropriate endpoint', async () => {
     await collection.estimatedDocumentCount()
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/estimatedDocumentCount', {})
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('renameCollection calls the appropriate endpoint', async () => {
@@ -163,11 +181,13 @@ describe('DbCollection tests', () => {
       'v1/collection/testCollection/renameCollection',
       { name: newCollectionName }
     )
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('stats calls the appropriate endpoint', async () => {
     await collection.stats()
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/stats', {})
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('createIndex calls the appropriate endpoint', async () => {
@@ -184,16 +204,19 @@ describe('DbCollection tests', () => {
         }
       }
     )
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('getIndexes calls the appropriate endpoint', async () => {
     await collection.getIndexes()
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/getIndexes', {})
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('dropIndex calls the appropriate endpoint', async () => {
     await collection.dropIndex('PriceIndex')
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/dropIndex', { index: 'PriceIndex' })
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('bulkWrite calls the appropriate endpoint', async () => {
@@ -204,6 +227,7 @@ describe('DbCollection tests', () => {
     ]
     await collection.bulkWrite(operations)
     expect(nonSessClient).toHaveCalledServicePost('v1/collection/testCollection/bulkWrite')
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('find calls the appropriate endpoint', async () => {
@@ -215,5 +239,7 @@ describe('DbCollection tests', () => {
     expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/find', { filter: { name: 'Item1' } })
     expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/find')
     expect(cursor).toHaveProperty('constructor.name', 'FindCursor')
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
+    expect(await sessClient.getSessionCookies()).toHaveLength(1)
   })
 })

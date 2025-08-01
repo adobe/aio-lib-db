@@ -37,7 +37,7 @@ function getDb() {
   const db = new DbBase(TEST_NAMESPACE, TEST_AUTH)
   // Ensure that an axios client has been created without session cookie tracking
   expect(axios.create).toHaveBeenCalledWith()
-  expect(db.axiosClient).toHaveProperty('hasSession', false)
+  expect(db.axiosClient.cookieJar).toBeUndefined()
   return db
 }
 
@@ -48,7 +48,7 @@ function getAxiosFromCursor(cursor) {
     httpsAgent: expect.any(HttpsCookieAgent)
   })
   const axiosClient = cursor._axiosClient
-  expect(axiosClient).toHaveProperty('hasSession', true)
+  expect(axiosClient.cookieJar).toBeDefined()
   return axiosClient
 }
 

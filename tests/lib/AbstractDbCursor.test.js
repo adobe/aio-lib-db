@@ -52,6 +52,7 @@ describe('AbstractDbCursor iteration tests', () => {
     expect(cursor.id).not.toBeDefined()
     expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/find')
     expect(dbClient._activeCursors).toHaveProperty('size', 0)
+    expect(await sessClient.getSessionCookies()).toHaveLength(0)
 
     await cursor.hasNext()
 
@@ -59,6 +60,7 @@ describe('AbstractDbCursor iteration tests', () => {
     expect(cursor.id).toBeDefined()
     expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/find')
     expect(dbClient._activeCursors).toHaveProperty('size', 1)
+    expect(await sessClient.getSessionCookies()).toHaveLength(1)
   })
 
   test('cursor iteration using hasNext and next', async () => {
@@ -180,6 +182,7 @@ describe('AbstractDbCursor iteration tests', () => {
     expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/find')
     expect(dbClient._activeCursors).toHaveProperty('size', 1)
     expect(closeEventEmitted).not.toBe(true)
+    expect(await sessClient.getSessionCookies()).toHaveLength(1)
 
     await cursor.close()
 
@@ -188,6 +191,7 @@ describe('AbstractDbCursor iteration tests', () => {
     expect(cursor._sessionClosed).toBe(true)
     expect(dbClient._activeCursors).toHaveProperty('size', 0)
     expect(closeEventEmitted).toBe(true)
+    expect(await sessClient.getSessionCookies()).toHaveLength(0)
   })
 
   test('cursor closes session when the end of results is reached', async () => {
@@ -203,6 +207,7 @@ describe('AbstractDbCursor iteration tests', () => {
     expect(cursor._sessionClosed).toBe(true)
     expect(dbClient._activeCursors).toHaveProperty('size', 0)
     expect(closeEventEmitted).toBe(true)
+    expect(await sessClient.getSessionCookies()).toHaveLength(0)
   })
 
   test('cursor closes session when an error occurs while iterating', async () => {
@@ -219,18 +224,26 @@ describe('AbstractDbCursor iteration tests', () => {
     expect(errorCursor._sessionClosed).toBe(true)
     expect(dbClient._activeCursors).toHaveProperty('size', 0)
     expect(closeEventEmitted).toBe(true)
+    expect(await sessClient.getSessionCookies()).toHaveLength(0)
   })
 
-  test('opening multiple cursors uses a different axios session client for each', async () => {
+  test('opening multiple cursors use different session cookies for each', async () => {
     const cursor1 = new TestCursor(collection.db, dbClient, collection.name, {})
     const cursor2 = new TestCursor(collection.db, dbClient, collection.name, {})
     const axios1 = getAxiosFromCursor(cursor1)
     const axios2 = getAxiosFromCursor(cursor2)
     expect(axios1).not.toBe(axios2)
 
+    // Opening cursor1 should not open cursor2
     await cursor1.hasNext()
-
     expect(axios1).toHaveCalledServicePost('v1/collection/testCollection/find')
     expect(axios2).not.toHaveCalledServicePost('v1/collection/testCollection/find')
+
+    await cursor2.hasNext()
+    const cookies1 = await axios1.getSessionCookies()
+    expect(cookies1).toHaveLength(1)
+    const cookies2 = await axios2.getSessionCookies()
+    expect(cookies2).toHaveLength(1)
+    expect(cookies1[0]).not.toEqual(cookies2[0])
   })
 })

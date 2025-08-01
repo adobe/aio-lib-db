@@ -63,11 +63,13 @@ describe('DbClient tests', () => {
     const filter = { name: 'test' }
     await client.listCollections(filter)
     expect(nonSessClient).toHaveCalledServicePost('v1/client/listCollections', { filter: filter })
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('createCollection calls the appropriate endpoint', async () => {
     const name = 'newCollection'
     await client.createCollection(name)
     expect(nonSessClient).toHaveCalledServicePost('v1/client/createCollection', { name: name })
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 })

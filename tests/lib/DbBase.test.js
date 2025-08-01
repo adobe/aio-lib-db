@@ -24,15 +24,18 @@ describe('DbBase tests', () => {
     const region = 'us-west-1'
     await db.provisionRequest({ region: region })
     expect(nonSessClient).toHaveCalledServicePost('v1/db/provision/request', { region: region })
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('provisionStatus calls the appropriate endpoint', async () => {
     await db.provisionStatus()
     expect(nonSessClient).toHaveCalledServicePost('v1/db/provision/status', {})
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('ping calls the appropriate endpoint', async () => {
     await db.ping()
     expect(nonSessClient).toHaveCalledServiceGet('v1/db/ping')
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 })

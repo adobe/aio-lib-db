@@ -115,11 +115,16 @@ describe('AggregateCursor tests', () => {
       { pipeline: [], options: { explain: true } }
     )
     expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/aggregate')
+    expect(await sessClient.getSessionCookies()).toEqual([])
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
     // After calling explain, the cursor should be closed and not usable
     expect(cursor.closed).toBe(true)
     expect(await cursor.hasNext()).toBe(false)
     expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
     expect(nonSessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
+    // Explain doesn't use a session, so the close endpoint should not be called
+    expect(sessClient).not.toHaveCalledServicePost('v1/client/close')
+    expect(nonSessClient).not.toHaveCalledServicePost('v1/client/close')
   })
 
   test('cursor.explain(), cursor.batchSize(), and cursor.map() cannot be called after initialization', async () => {
