@@ -27,6 +27,14 @@ class TestCursorWithError extends AbstractDbCursor {
   }
 
   async _getMore() {
+    // Simulate an error during getMore
+    await apiPost(
+      this._db,
+      this._axiosClient,
+      `collection/${this._collection}/getMore`,
+      { cursorId: TEST_CURSOR_ID },
+      this._options
+    )
     throw new Error('DANGER, WILL ROBINSON!')
   }
 }
@@ -80,9 +88,10 @@ describe('AbstractDbCursor iteration tests', () => {
     expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
 
     // Consume the first batch
-    await cursor.next()
-    await cursor.next()
-    await cursor.next()
+    const bufferLength = cursor._buffer.length
+    for (let i = 0; i < bufferLength; i++) {
+      await cursor.next()
+    }
     expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
 
     // Now hasNext() should trigger a getMore call
@@ -210,6 +219,20 @@ describe('AbstractDbCursor iteration tests', () => {
     expect(await sessClient.getSessionCookies()).toHaveLength(0)
   })
 
+  test('calling close() before reaching the end of results stops iteration and clears the buffer', async () => {
+    expect(await cursor.hasNext()).toBe(true)
+    expect(cursor._buffer.length).toBeGreaterThan(0)
+    expect(cursor._sessionClosed).toBe(false)
+
+    await cursor.close()
+    expect(cursor._sessionClosed).toBe(true)
+
+    expect(cursor._buffer.length).toBe(0)
+    expect(await cursor.hasNext()).toBe(false)
+    expect(await cursor.next()).toBeNull()
+    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
+  })
+
   test('cursor closes session when an error occurs while iterating', async () => {
     let closeEventEmitted = false
     const errorCursor = new TestCursorWithError(collection.db, dbClient, collection.name, {})
@@ -218,13 +241,41 @@ describe('AbstractDbCursor iteration tests', () => {
     })
     const sessClient = getAxiosFromCursor(errorCursor)
 
-    await expect(errorCursor.toArray()).rejects.toThrow('DANGER, WILL ROBINSON!')
+    await errorCursor.hasNext()
+    const bufferLength = errorCursor._buffer.length
+    // Consume the buffer so the following next() call hits getMore and the mock triggers an error
+    for (let i = 0; i < bufferLength; i++) {
+      await errorCursor.next()
+    }
+    expect(sessClient).not.toHaveCalledServicePost('v1/collection/testCollection/getMore')
+
+    await expect(errorCursor.next()).rejects.toThrow('DANGER, WILL ROBINSON!')
+    expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/getMore')
 
     expect(sessClient).toHaveCalledServicePost('v1/client/close')
     expect(errorCursor._sessionClosed).toBe(true)
     expect(dbClient._activeCursors).toHaveProperty('size', 0)
     expect(closeEventEmitted).toBe(true)
     expect(await sessClient.getSessionCookies()).toHaveLength(0)
+  })
+
+  test('cursor stops iteration when an error occurs', async () => {
+    const errorCursor = new TestCursorWithError(collection.db, dbClient, collection.name, {})
+    const sessClient = getAxiosFromCursor(errorCursor)
+
+    await errorCursor.hasNext()
+    const bufferLength = errorCursor._buffer.length
+    // Consume the buffer so the following next() call hits getMore and the mock triggers an error
+    for (let i = 0; i < bufferLength; i++) {
+      await errorCursor.next()
+    }
+    expect(errorCursor._sessionClosed).toBe(false)
+
+    await expect(errorCursor.next()).rejects.toThrow('DANGER, WILL ROBINSON!')
+    expect(sessClient).toHaveCalledServicePost('v1/collection/testCollection/getMore')
+    expect(errorCursor._sessionClosed).toBe(true)
+    expect(await errorCursor.hasNext()).toBe(false)
+    expect(await errorCursor.next()).toBeNull()
   })
 
   test('opening multiple cursors use different session cookies for each', async () => {
