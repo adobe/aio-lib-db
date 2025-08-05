@@ -58,6 +58,14 @@ function throwErrorResponse(message, responseCode = 500) {
 const SESSION_COOKIE = 'abdb-session-id'
 const ENDPOINT_DOMAIN = ENDPOINT_URL.replace(/^https?:\/\//, '')
 
+// Session configuration constants
+const SESSION_CONFIGS = {
+  START_SESSION: { sessionOnRequest: "reject", start: true },
+  REQUIRE_SESSION: { sessionOnRequest: "required" },
+  CLOSE_SESSION: { sessionOnRequest: "required", close: true },
+  NO_SESSION: undefined
+}
+
 // Responses to return from endpoints expecting the corresponding type of data
 const OBJECT_RESPONSE = buildResponseTemplate({ field: 'value' })
 const ARRAY_RESPONSE = buildResponseTemplate([{ field: 'value1' }, { field: 'value2' }, { field: 'value3' }])
@@ -111,12 +119,7 @@ const POST_ENDPOINT_RESULTS = [
   {
     route: RegExp(`^v1/collection/[^/]+/find$`),
     result: FIRST_CURSOR_RESPONSE,
-    getSessionConfig: () => {
-      return {
-        sessionOnRequest: "reject",
-        start: true
-      }
-    }
+    getSessionConfig: () => SESSION_CONFIGS.START_SESSION
   },
   {
     route: RegExp(`^v1/collection/[^/]+/insertOne$`),
@@ -174,10 +177,7 @@ const POST_ENDPOINT_RESULTS = [
       if (body?.options?.explain) {
         return undefined
       }
-      return {
-        sessionOnRequest: "reject",
-        start: true
-      }
+      return SESSION_CONFIGS.START_SESSION
     }
   },
   {
@@ -207,9 +207,7 @@ const POST_ENDPOINT_RESULTS = [
   {
     route: RegExp(`^v1/collection/[^/]+/getMore$`),
     result: LAST_CURSOR_RESPONSE,
-    getSessionConfig: () => {
-      return { sessionOnRequest: "required" }
-    }
+    getSessionConfig: () => SESSION_CONFIGS.REQUIRE_SESSION
   },
   {
     route: RegExp(`^v1/client/createCollection$`),
@@ -222,9 +220,7 @@ const POST_ENDPOINT_RESULTS = [
   {
     route: RegExp(`^v1/client/close$`),
     result: VOID_RESPONSE,
-    getSessionConfig: () => {
-      return { close: true }
-    }
+    getSessionConfig: () => SESSION_CONFIGS.CLOSE_SESSION
   },
   {
     route: RegExp(`^v1/db/provision/request$`),
@@ -266,7 +262,7 @@ class AxiosMock {
       throwErrorResponse('Session already started', 403)
     }
     if (!hasCookie && sessionConfig.sessionOnRequest === 'required') {
-      throwErrorResponse('No active abdb session found', 403)
+      throwErrorResponse('Session cookie is missing', 400)
     }
     if (sessionConfig.start && !hasCookie) {
       await jar.setCookie(new Cookie({
