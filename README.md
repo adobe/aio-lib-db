@@ -436,7 +436,7 @@ const report = await collection.aggregate()
 - `listCollections(filter?, options?)` - List collections
 - `collection(name)` - Get collection instance
 - `createCollection(name, options?)` - Create new collection
-- `close()` - Close all open cursors
+- `close()` - Close the connection and all open cursors
 
 ### DbCollection
 
