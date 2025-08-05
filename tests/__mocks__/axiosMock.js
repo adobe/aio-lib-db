@@ -175,7 +175,7 @@ const POST_ENDPOINT_RESULTS = [
     getSessionConfig: (body) => {
       // Aggregate endpoint doesn't use a session if explain is set to true
       if (body?.options?.explain) {
-        return undefined
+        return SESSION_CONFIGS.NO_SESSION
       }
       return SESSION_CONFIGS.START_SESSION
     }
