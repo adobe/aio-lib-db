@@ -9,7 +9,7 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-const { RUNTIME_HEADER, ENDPOINT_URL } = require("../lib/constants")
+const { RUNTIME_HEADER, PROD_ENV } = require("../lib/constants")
 const DbBase = require("../lib/DbBase")
 const { default: axios } = require('axios')
 const { HttpCookieAgent, HttpsCookieAgent } = require("http-cookie-agent/http")
@@ -20,6 +20,8 @@ const TEST_PASS = 'testPass'
 
 const TEST_AUTH = `${TEST_USER}:${TEST_PASS}`
 const TEST_NAMESPACE = `testNamespace`
+const TEST_REGION = 'emea'
+const TEST_SERVICE_URL = `https://db.${TEST_REGION}.adobe.test`
 
 const TEST_REQ_CONFIG = {
   headers: { [RUNTIME_HEADER]: TEST_NAMESPACE },
@@ -31,10 +33,12 @@ const TEST_REQ_CONFIG = {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  process.env.AIO_CLI_ENV = PROD_ENV // Set the environment to production for tests
+  delete process.env.AIO_DB_ENDPOINT // Ensure no endpoint override
 })
 
 function getDb() {
-  const db = new DbBase(TEST_NAMESPACE, TEST_AUTH)
+  const db = new DbBase(TEST_REGION, TEST_NAMESPACE, TEST_AUTH)
   // Ensure that axios clients are created both with and without session cookie tracking
   expect(axios.create).toHaveBeenCalledWith({
     httpAgent: expect.any(HttpCookieAgent),
@@ -83,7 +87,7 @@ function toEqualEjson(actualString, expectedString) {
 
 /**
  * Custom jest tester to check post requests to service api.
- * Functions as expect(axiosClient.post).toHaveBeenCalledWith(`${ENDPOINT_URL}/${route}`, body, <runtime/auth headers>)
+ * Functions as expect(axiosClient.post).toHaveBeenCalledWith(`<BASE_URL>/${route}`, body, <runtime/auth headers>)
  * Not passing the body parameter will only check the URL and headers
  * If the times parameter is provided, it will check that the request was made exactly that many times.
  *
@@ -97,7 +101,7 @@ function toEqualEjson(actualString, expectedString) {
  * @param {number=} times
  */
 function toHaveCalledServicePost(axiosClient, route, body = undefined, times = undefined) {
-  const url = `${ENDPOINT_URL}/${route}`
+  const url = route.startsWith('http') ? route : `${TEST_SERVICE_URL}/${route}`
   const bodyMatcher = body ? expect.toEqualEjson(EJSON.stringify(body, { relaxed: false })) : expect.anything()
   try {
     if (times !== undefined) {
@@ -129,7 +133,7 @@ function toHaveCalledServicePost(axiosClient, route, body = undefined, times = u
 
 /**
  * Custom jest tester to check get requests to service api.
- * Functions as expect(axiosClient.get).toHaveBeenCalledWith(`${ENDPOINT_URL}/${route}`, <runtime/auth headers>)
+ * Functions as expect(axiosClient.get).toHaveBeenCalledWith(`<BASE_URL>/${route}`, <runtime/auth headers>)
  *
  * Example use:
  *   await dbClient.dbStats()
@@ -139,7 +143,7 @@ function toHaveCalledServicePost(axiosClient, route, body = undefined, times = u
  * @param {string} route
  */
 function toHaveCalledServiceGet(axiosClient, route) {
-  const url = `${ENDPOINT_URL}/${route}`
+  const url = route.startsWith('http') ? route : `${TEST_SERVICE_URL}/${route}`
   try {
     expect(axiosClient.get).toHaveBeenCalledWith(url, TEST_REQ_CONFIG)
     return {
@@ -207,5 +211,7 @@ async function toThrowErrorWithProperties(asyncFn, errMatcher, errorType = '') {
 expect.extend({ toEqualEjson, toHaveCalledServicePost, toHaveCalledServiceGet, toThrowErrorWithProperties })
 
 module.exports = {
-  getDb
+  getDb,
+  TEST_NAMESPACE,
+  TEST_AUTH
 }

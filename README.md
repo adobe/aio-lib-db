@@ -27,20 +27,23 @@ Currently, `aio-lib-db` is used locally. Install it by adding it to your `packag
 First, set your credentials in your `.env` file:
 
 ```env
-AIO_runtime_namespace=your_namespace
-AIO_runtime_auth=user:password
+__OW_NAMESPACE=your_namespace
+__OW_API_KEY=user:password
 ```
 
 > To find runtime namespace and credentials, click "Download all" in the Adobe Developer Console for your project workspace and the values will be under `project.workspace.details.runtime.namespaces`.
 
 ### Basic Usage
 
+> When calling `libDb.init()`, you can pass `{ region: '<region>>' }` to specify the region where your database is provisioned.  
+> Valid regions are `amer` (default), `emea`, and `apac`.
+
 ```javascript
 const libDb = require('@adobe/aio-lib-db');
 
 async function main() {
   // Initialize and connect
-  const db = await libDb.init();
+  const db = await libDb.init({ region: 'amer' });
   const client = await db.connect();
   
   // Get a collection

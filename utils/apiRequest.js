@@ -9,7 +9,7 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-const { ENDPOINT_URL, RUNTIME_HEADER, REQUEST_ID_HEADER } = require('../lib/constants')
+const { RUNTIME_HEADER, REQUEST_ID_HEADER } = require('../lib/constants')
 const DbError = require('../lib/DbError')
 const { EJSON } = require("bson")
 
@@ -57,7 +57,7 @@ async function apiGet(db, apiPath, withSession = false) {
  * @throws {DbError}
  */
 async function apiRequest(db, apiPath, method, body = {}, withSession = false) {
-  const fullUrl = `${ENDPOINT_URL}/${apiPath}`
+  const fullUrl = `${db.serviceUrl}/${apiPath}`
   let res
   try {
     const axiosClient = withSession ? db.axiosClientWithSession : db.axiosClientWithoutSession

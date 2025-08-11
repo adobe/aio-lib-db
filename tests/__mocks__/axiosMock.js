@@ -9,7 +9,6 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-const { ENDPOINT_URL } = require('../../lib/constants')
 const { Long, EJSON } = require("bson")
 const { v6: uuidV6 } = require("uuid")
 const { HttpCookieAgent, HttpsCookieAgent } = require("http-cookie-agent/http")
@@ -191,8 +190,16 @@ const POST_ENDPOINT_RESULTS = [
   }
 ]
 
-// Slice off everything up to this point before checking route
-const ROUTE_START = ENDPOINT_URL.length + 1
+function getResponse(url, method) {
+  const route = url.match(/^(https?:\/\/[^/]+\/)?(?<route>.*)/).groups.route // Remove base url if present
+  const methodResults = method === 'GET' ? GET_ENDPOINT_RESULTS : POST_ENDPOINT_RESULTS
+  const result = methodResults.find(r => r.route.test(route))?.result
+  if (result !== undefined) {
+    // Have to deep clone the result to avoid issues with the original object being modified by a previous test
+    return new Promise((resolve) => resolve(deepClone(result)))
+  }
+  throw new Error(`${url} did not match any known ${method} endpoint`)
+}
 
 class AxiosMock {
   hasSession = false
@@ -204,35 +211,8 @@ class AxiosMock {
     }
   }
 
-  get = jest.fn(async (url, reqConfig) => {
-    url = url.slice(ROUTE_START)
-    let result
-    GET_ENDPOINT_RESULTS.forEach((r) => {
-      if (!result && r.route.test(url)) {
-        return result = r.result
-      }
-    })
-    if (result !== undefined) {
-      // Have to deep clone the result to avoid issues with the original object being modified by a previous test
-      return new Promise((resolve) => resolve(deepClone(result)))
-    }
-    throw new Error(`${url} did not match any known GET endpoint`)
-  })
-
-  post = jest.fn(async (url, body, reqConfig) => {
-    url = url.slice(ROUTE_START)
-    let result
-    POST_ENDPOINT_RESULTS.forEach((r) => {
-      if (!result && r.route.test(url)) {
-        result = r.result
-      }
-    })
-    if (result !== undefined) {
-      // Have to deep clone the result to avoid issues with the original object being modified by a previous test
-      return new Promise((resolve) => resolve(deepClone(result)))
-    }
-    throw new Error(`${url} did not match any known POST endpoint`)
-  })
+  get = jest.fn(async (url, reqConfig) => getResponse(url, 'GET'))
+  post = jest.fn(async (url, body, reqConfig) => getResponse(url, 'POST'))
 }
 
 let mockSessionClient
