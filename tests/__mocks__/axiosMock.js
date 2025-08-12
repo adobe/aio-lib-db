@@ -55,7 +55,7 @@ function throwErrorResponse(message, responseCode = 500) {
   throw err
 }
 
-const SESSION_COOKIE = 'abdb-session-id'
+const SESSION_COOKIE = 'adpsd-session-id'
 const ENDPOINT_DOMAIN = ENDPOINT_URL.replace(/^https?:\/\//, '')
 
 // Session configuration constants
