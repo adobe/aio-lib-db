@@ -16,59 +16,50 @@ const { apiGet, apiPost } = require("../../utils/apiRequest")
 
 describe('DbBase tests', () => {
   let db
-  let sessClient
   let nonSessClient
 
   beforeEach(async () => {
     db = getDb()
-    sessClient = db.axiosClientWithSession
-    nonSessClient = db.axiosClientWithoutSession
-  })
-
-  test('connect calls the appropriate endpoint', async () => {
-    const res = await db.connect()
-    expect(sessClient).toHaveCalledServicePost('v1/db/connect', {})
-    expect(nonSessClient).not.toHaveCalledServicePost('v1/db/connect')
-    expect(res).toHaveProperty('constructor.name', 'DbClient')
+    nonSessClient = db.axiosClient
   })
 
   test('provisionRequest calls the appropriate endpoint', async () => {
     await db.provisionRequest()
     expect(nonSessClient).toHaveCalledServicePost('v1/db/provision/request')
-    expect(sessClient).not.toHaveCalledServicePost('v1/db/provision/request')
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('provisionStatus calls the appropriate endpoint', async () => {
     await db.provisionStatus()
     expect(nonSessClient).toHaveCalledServicePost('v1/db/provision/status', {})
-    expect(sessClient).not.toHaveCalledServicePost('v1/db/provision/status')
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('ping calls the appropriate endpoint', async () => {
     await db.ping()
     expect(nonSessClient).toHaveCalledServiceGet('v1/db/ping')
-    expect(sessClient).not.toHaveCalledServiceGet('v1/db/ping')
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
   test('serviceUrl is set based on region', async () => {
     for (const region of ALLOWED_REGIONS) {
       const dbInstance = await DbBase.init({ region: region, namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
-      const axiosClient = dbInstance.axiosClientWithoutSession
+      const axiosClient = dbInstance.axiosClient
       expect(dbInstance.serviceUrl).toBe(`https://db.${region}.adobe.test`)
-      await apiGet(dbInstance, 'db/ping')
+      await apiGet(dbInstance, axiosClient, 'db/ping')
       expect(axiosClient).toHaveCalledServiceGet(`https://db.${region}.adobe.test/v1/db/ping`)
-      await apiPost(dbInstance, 'db/provision/status')
+      await apiPost(dbInstance, axiosClient, 'db/provision/status')
       expect(axiosClient).toHaveCalledServicePost(`https://db.${region}.adobe.test/v1/db/provision/status`)
     }
 
     // Test default region
     const defaultRegion = ALLOWED_REGIONS.at(0)
     const defaultDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
-    const axiosClient = defaultDb.axiosClientWithoutSession
+    const axiosClient = defaultDb.axiosClient
     expect(defaultDb.serviceUrl).toBe(`https://db.${defaultRegion}.adobe.test`)
-    await apiGet(defaultDb, 'db/ping')
+    await apiGet(defaultDb, axiosClient, 'db/ping')
     expect(axiosClient).toHaveCalledServiceGet(`https://db.${defaultRegion}.adobe.test/v1/db/ping`)
-    await apiPost(defaultDb, 'db/provision/status')
+    await apiPost(defaultDb, axiosClient, 'db/provision/status')
     expect(axiosClient).toHaveCalledServicePost(`https://db.${defaultRegion}.adobe.test/v1/db/provision/status`)
   })
 
@@ -79,30 +70,30 @@ describe('DbBase tests', () => {
 
     process.env.AIO_CLI_ENV = 'stage'
     const dbStage = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
-    const stageAxios = dbStage.axiosClientWithoutSession
+    const stageAxios = dbStage.axiosClient
     expect(dbStage.serviceUrl).toBe(stageUrl)
-    await apiGet(dbStage, 'db/ping')
+    await apiGet(dbStage, stageAxios, 'db/ping')
     expect(stageAxios).toHaveCalledServiceGet(`${stageUrl}/v1/db/ping`)
-    await apiPost(dbStage, 'db/provision/status')
+    await apiPost(dbStage, stageAxios, 'db/provision/status')
     expect(stageAxios).toHaveCalledServicePost(`${stageUrl}/v1/db/provision/status`)
 
     process.env.AIO_CLI_ENV = 'prod'
     const dbProd = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
-    const prodAxios = dbProd.axiosClientWithoutSession
+    const prodAxios = dbProd.axiosClient
     expect(dbProd.serviceUrl).toBe(prodUrl)
-    await apiGet(dbProd, 'db/ping')
+    await apiGet(dbProd, prodAxios, 'db/ping')
     expect(prodAxios).toHaveCalledServiceGet(`${prodUrl}/v1/db/ping`)
-    await apiPost(dbProd, 'db/provision/status')
+    await apiPost(dbProd, prodAxios, 'db/provision/status')
     expect(prodAxios).toHaveCalledServicePost(`${prodUrl}/v1/db/provision/status`)
 
     // Should default to prod if AIO_CLI_ENV is not set
     delete process.env.AIO_CLI_ENV
     const dbDefault = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
-    const defaultAxios = dbDefault.axiosClientWithoutSession
+    const defaultAxios = dbDefault.axiosClient
     expect(dbDefault.serviceUrl).toBe(prodUrl)
-    await apiGet(dbDefault, 'db/ping')
+    await apiGet(dbDefault, defaultAxios, 'db/ping')
     expect(defaultAxios).toHaveCalledServiceGet(`${prodUrl}/v1/db/ping`)
-    await apiPost(dbDefault, 'db/provision/status')
+    await apiPost(dbDefault, defaultAxios, 'db/provision/status')
     expect(defaultAxios).toHaveCalledServicePost(`${prodUrl}/v1/db/provision/status`)
   })
 
@@ -111,11 +102,11 @@ describe('DbBase tests', () => {
     process.env.AIO_DB_ENDPOINT = customEndpoint
 
     const dbCustom = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
-    const axiosClient = dbCustom.axiosClientWithoutSession
+    const axiosClient = dbCustom.axiosClient
     expect(dbCustom.serviceUrl).toBe(customEndpoint)
-    await apiGet(dbCustom, 'db/ping')
+    await apiGet(dbCustom, axiosClient, 'db/ping')
     expect(axiosClient).toHaveCalledServiceGet(`${customEndpoint}/v1/db/ping`)
-    await apiPost(dbCustom, 'db/provision/status')
+    await apiPost(dbCustom, axiosClient, 'db/provision/status')
     expect(axiosClient).toHaveCalledServicePost(`${customEndpoint}/v1/db/provision/status`)
   })
 

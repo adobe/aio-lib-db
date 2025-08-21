@@ -9,18 +9,16 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-const { getDb } = require("../testingUtils")
+const { getDb, getAxiosFromCursor } = require("../testingUtils")
 const { CURSOR_INIT_ERR_MESSAGE } = require("../../lib/constants")
 
 describe('FindCursor tests', () => {
   let collection
-  let sessClient
   let nonSessClient
 
   beforeEach(async () => {
     const db = getDb()
-    sessClient = db.axiosClientWithSession
-    nonSessClient = db.axiosClientWithoutSession
+    nonSessClient = db.axiosClient
     const client = await db.connect()
     collection = client.collection('testCollection')
     jest.clearAllMocks()
@@ -37,6 +35,7 @@ describe('FindCursor tests', () => {
 
     // Initialize the cursor to trigger the request
     await cursor.hasNext()
+    const sessClient = getAxiosFromCursor(cursor)
 
     expect(sessClient).toHaveCalledServicePost(
       'v1/collection/testCollection/find',

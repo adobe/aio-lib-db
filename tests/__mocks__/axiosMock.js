@@ -9,42 +9,80 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
+const { REQUEST_ID_HEADER } = require('../../lib/constants')
 const { Long, EJSON } = require("bson")
 const { v6: uuidV6 } = require("uuid")
-const { HttpCookieAgent, HttpsCookieAgent } = require("http-cookie-agent/http")
+const { Cookie } = require("tough-cookie")
+
+const TEST_REGION = 'emea'
+const TEST_SERVICE_URL = `https://db.${TEST_REGION}.adobe.test`
 
 // Helper to construct the result object returned by an axios request
-function buildResponse(body = {}) {
+function buildResponseTemplate(body = {}) {
+  const requestId = uuidV6()
   return {
-    headers: {
-      REQUEST_ID_HEADER: uuidV6()
-    },
+    headers: { [REQUEST_ID_HEADER]: requestId },
+    status: 200,
     data: {
       success: true,
-      data: body
+      data: body,
+      requestId
     }
   }
 }
 
-function deepClone(obj) {
-  return EJSON.parse(EJSON.stringify(obj, { relaxed: false }), { relaxed: false })
+function getResponse(template, cookies = undefined) {
+  // Have to deep clone the template to avoid issues with the original object being modified by a previous test
+  const response = EJSON.parse(EJSON.stringify(template, { relaxed: false }), { relaxed: false })
+  if (cookies && cookies.length > 0) {
+    response.headers['Set-Cookie'] = cookies
+  }
+  return response
+}
+
+function throwErrorResponse(message, responseCode = 500) {
+  const requestId = uuidV6()
+  const response = {
+    headers: {
+      [REQUEST_ID_HEADER]: requestId
+    },
+    status: responseCode,
+    data: {
+      success: false,
+      message,
+      requestId
+    }
+  }
+  const err = new Error(message)
+  err.response = response
+  throw err
+}
+
+const SESSION_COOKIE = 'adpsd-session-id'
+
+// Session configuration constants
+const SESSION_CONFIGS = {
+  START_SESSION: { sessionOnRequest: "reject", start: true },
+  REQUIRE_SESSION: { sessionOnRequest: "required" },
+  CLOSE_SESSION: { sessionOnRequest: "required", close: true },
+  NO_SESSION: undefined
 }
 
 // Responses to return from endpoints expecting the corresponding type of data
-const OBJECT_RESPONSE = buildResponse({ field: 'value' })
-const ARRAY_RESPONSE = buildResponse([{ field: 'value1' }, { field: 'value2' }, { field: 'value3' }])
-const NUMBER_RESPONSE = buildResponse(42)
-const STRING_RESPONSE = buildResponse('testString')
-const VOID_RESPONSE = buildResponse(undefined)
+const OBJECT_RESPONSE = buildResponseTemplate({ field: 'value' })
+const ARRAY_RESPONSE = buildResponseTemplate([{ field: 'value1' }, { field: 'value2' }, { field: 'value3' }])
+const NUMBER_RESPONSE = buildResponseTemplate(42)
+const STRING_RESPONSE = buildResponseTemplate('testString')
+const VOID_RESPONSE = buildResponseTemplate(undefined)
 
 const TEST_CURSOR_ID = new Long('5461853363952707584')
-const FIRST_CURSOR_RESPONSE = buildResponse({
+const FIRST_CURSOR_RESPONSE = buildResponseTemplate({
   cursor: {
     id: TEST_CURSOR_ID,
     firstBatch: [{ field: 'value1' }, { field: 'value2' }, { field: 'value3' }]
   }
 })
-const LAST_CURSOR_RESPONSE = buildResponse({
+const LAST_CURSOR_RESPONSE = buildResponseTemplate({
   cursor: {
     id: 0,
     nextBatch: [{ field: 'value4' }, { field: 'value5' }, { field: 'value6' }]
@@ -65,10 +103,6 @@ const GET_ENDPOINT_RESULTS = [
 
 const POST_ENDPOINT_RESULTS = [
   {
-    route: RegExp(`^v1/db/connect$`),
-    result: VOID_RESPONSE
-  },
-  {
     route: RegExp(`^v1/collection/[^/]+/getIndexes$`),
     result: ARRAY_RESPONSE
   },
@@ -86,7 +120,8 @@ const POST_ENDPOINT_RESULTS = [
   },
   {
     route: RegExp(`^v1/collection/[^/]+/find$`),
-    result: FIRST_CURSOR_RESPONSE
+    result: FIRST_CURSOR_RESPONSE,
+    getSessionConfig: () => SESSION_CONFIGS.START_SESSION
   },
   {
     route: RegExp(`^v1/collection/[^/]+/insertOne$`),
@@ -138,7 +173,14 @@ const POST_ENDPOINT_RESULTS = [
   },
   {
     route: RegExp(`^v1/collection/[^/]+/aggregate$`),
-    result: FIRST_CURSOR_RESPONSE
+    result: FIRST_CURSOR_RESPONSE,
+    getSessionConfig: (body) => {
+      // Aggregate endpoint doesn't use a session if explain is set to true
+      if (body?.options?.explain) {
+        return SESSION_CONFIGS.NO_SESSION
+      }
+      return SESSION_CONFIGS.START_SESSION
+    }
   },
   {
     route: RegExp(`^v1/collection/[^/]+/findOne$`),
@@ -166,7 +208,8 @@ const POST_ENDPOINT_RESULTS = [
   },
   {
     route: RegExp(`^v1/collection/[^/]+/getMore$`),
-    result: LAST_CURSOR_RESPONSE
+    result: LAST_CURSOR_RESPONSE,
+    getSessionConfig: () => SESSION_CONFIGS.REQUIRE_SESSION
   },
   {
     route: RegExp(`^v1/client/createCollection$`),
@@ -178,7 +221,8 @@ const POST_ENDPOINT_RESULTS = [
   },
   {
     route: RegExp(`^v1/client/close$`),
-    result: VOID_RESPONSE
+    result: VOID_RESPONSE,
+    getSessionConfig: () => SESSION_CONFIGS.CLOSE_SESSION
   },
   {
     route: RegExp(`^v1/db/provision/request$`),
@@ -190,19 +234,12 @@ const POST_ENDPOINT_RESULTS = [
   }
 ]
 
-function getResponse(url, method) {
-  const route = url.match(/^(https?:\/\/[^/]+\/)?(?<route>.*)/).groups.route // Remove base url if present
-  const methodResults = method === 'GET' ? GET_ENDPOINT_RESULTS : POST_ENDPOINT_RESULTS
-  const result = methodResults.find(r => r.route.test(route))?.result
-  if (result !== undefined) {
-    // Have to deep clone the result to avoid issues with the original object being modified by a previous test
-    return new Promise((resolve) => resolve(deepClone(result)))
-  }
-  throw new Error(`${url} did not match any known ${method} endpoint`)
-}
+const urlMatcher = /^(?<baseUrl>https?:\/\/(?<domain>[^/]+))\/(?<route>.*)/
 
 class AxiosMock {
-  hasSession = false
+  constructor(config = undefined) {
+    this.cookieJar = config?.httpAgent?.options?.cookies?.jar || config?.httpsAgent?.options?.cookies?.jar || undefined
+  }
 
   interceptors = {
     response: {
@@ -211,29 +248,91 @@ class AxiosMock {
     }
   }
 
-  get = jest.fn(async (url, reqConfig) => getResponse(url, 'GET'))
-  post = jest.fn(async (url, body, reqConfig) => getResponse(url, 'POST'))
+  getCookieHeaders = async (baseUrl, domain, sessionConfig) => {
+    if (sessionConfig) {
+      expect(this.cookieJar).toBeDefined()
+    }
+    if (!this.cookieJar) {
+      expect(sessionConfig).toBeUndefined()
+      return
+    }
+
+    const jar = this.cookieJar
+    const hasCookie = (await jar.store.findCookie(domain, '/', SESSION_COOKIE)) !== undefined
+    if (hasCookie && sessionConfig.sessionOnRequest === 'reject') {
+      throwErrorResponse('Session already started', 403)
+    }
+    if (!hasCookie && sessionConfig.sessionOnRequest === 'required') {
+      throwErrorResponse('Session cookie is missing', 400)
+    }
+    if (sessionConfig.start && !hasCookie) {
+      await jar.setCookie(new Cookie({
+        key: SESSION_COOKIE,
+        value: uuidV6(),
+        domain
+      }), baseUrl)
+    }
+    if (sessionConfig.close) {
+      await jar.store.removeCookie(domain, '/', SESSION_COOKIE)
+    }
+    return await jar.getSetCookieStrings(baseUrl)
+  }
+
+  get = jest.fn(async (url, reqConfig) => {
+    const { baseUrl, domain, route } = url.match(urlMatcher).groups
+    let result
+    let sessionConfig
+    for (const r of GET_ENDPOINT_RESULTS) {
+      if (r.route.test(route)) {
+        result = r.result
+        sessionConfig = r.getSessionConfig?.()
+        break
+      }
+    }
+    if (result !== undefined) {
+      const cookies = await this.getCookieHeaders(baseUrl, domain, sessionConfig)
+      return getResponse(result, cookies)
+    }
+    throw new Error(`${url} did not match any mocked GET endpoint`)
+  })
+
+  post = jest.fn(async (url, body, reqConfig) => {
+    const { baseUrl, domain, route } = url.match(urlMatcher).groups
+    let result
+    let sessionConfig
+    for (const r of POST_ENDPOINT_RESULTS) {
+      if (r.route.test(route)) {
+        result = r.result
+        const bodyParsed = body ? EJSON.parse(body, { relaxed: false }) : {}
+        sessionConfig = r.getSessionConfig?.(bodyParsed)
+        break
+      }
+    }
+    if (result !== undefined) {
+      const cookie = await this.getCookieHeaders(baseUrl, domain, sessionConfig)
+      return getResponse(result, cookie)
+    }
+    throw new Error(`${url} did not match any mocked POST endpoint`)
+  })
+
+  // Helper function to compare cookies in tests
+  getSessionCookies = jest.fn(async () => {
+    if (!this.cookieJar) {
+      return []
+    }
+    const cookies = (await this.cookieJar.getSetCookieStrings(TEST_SERVICE_URL)) || []
+    // Filter cookies to only include the session cookie and return only the name=value part
+    return cookies?.filter(c => c.startsWith(`${SESSION_COOKIE}=`)).map(c => c.split(';')[0])
+  })
 }
 
-let mockSessionClient
-let mockClientWithoutSession
 module.exports = {
   default: {
-    create: jest.fn((config) => {
-      if (config?.httpAgent instanceof HttpCookieAgent || config?.httpsAgent instanceof HttpsCookieAgent) {
-        if (!mockSessionClient) {
-          mockSessionClient = new AxiosMock()
-          mockSessionClient.hasSession = true
-        }
-        return mockSessionClient
-      }
-      if (!mockClientWithoutSession) {
-        mockClientWithoutSession = new AxiosMock()
-      }
-      return mockClientWithoutSession
-    })
+    create: jest.fn(config => new AxiosMock(config))
   },
-  // Export this value so cursor tests make sure to use the same ID as mocked results
+  // Export these values so tests make sure to use the same ones as mocked results
   // Can't put in testingUtils because it would cause circular dependency issues
-  TEST_CURSOR_ID
+  TEST_CURSOR_ID,
+  TEST_REGION,
+  TEST_SERVICE_URL
 }

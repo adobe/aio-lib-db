@@ -11,7 +11,7 @@ governing permissions and limitations under the License.
 */
 const { RUNTIME_HEADER, PROD_ENV } = require("../lib/constants")
 const DbBase = require("../lib/DbBase")
-const { default: axios } = require('axios')
+const { default: axios, TEST_REGION, TEST_SERVICE_URL } = require('axios')
 const { HttpCookieAgent, HttpsCookieAgent } = require("http-cookie-agent/http")
 const { EJSON } = require("bson")
 
@@ -20,8 +20,6 @@ const TEST_PASS = 'testPass'
 
 const TEST_AUTH = `${TEST_USER}:${TEST_PASS}`
 const TEST_NAMESPACE = `testNamespace`
-const TEST_REGION = 'emea'
-const TEST_SERVICE_URL = `https://db.${TEST_REGION}.adobe.test`
 
 const TEST_REQ_CONFIG = {
   headers: { [RUNTIME_HEADER]: TEST_NAMESPACE },
@@ -39,15 +37,21 @@ beforeEach(() => {
 
 function getDb() {
   const db = new DbBase(TEST_REGION, TEST_NAMESPACE, TEST_AUTH)
-  // Ensure that axios clients are created both with and without session cookie tracking
+  // Ensure that an axios client has been created without session cookie tracking
+  expect(axios.create).toHaveBeenCalledWith()
+  expect(db.axiosClient.cookieJar).toBeUndefined()
+  return db
+}
+
+function getAxiosFromCursor(cursor) {
+  // Ensure that an axios client has been created with session cookie tracking and is attached to the cursor
   expect(axios.create).toHaveBeenCalledWith({
     httpAgent: expect.any(HttpCookieAgent),
     httpsAgent: expect.any(HttpsCookieAgent)
   })
-  expect(axios.create).toHaveBeenCalledWith()
-  expect(db.axiosClientWithoutSession).toHaveProperty('hasSession', false)
-  expect(db.axiosClientWithSession).toHaveProperty('hasSession', true)
-  return db
+  const axiosClient = cursor._axiosClient
+  expect(axiosClient.cookieJar).toBeDefined()
+  return axiosClient
 }
 
 /**
@@ -213,5 +217,6 @@ expect.extend({ toEqualEjson, toHaveCalledServicePost, toHaveCalledServiceGet, t
 module.exports = {
   getDb,
   TEST_NAMESPACE,
-  TEST_AUTH
+  TEST_AUTH,
+  getAxiosFromCursor
 }
