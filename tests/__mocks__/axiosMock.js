@@ -9,10 +9,13 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-const { ENDPOINT_URL, REQUEST_ID_HEADER } = require('../../lib/constants')
+const { REQUEST_ID_HEADER } = require('../../lib/constants')
 const { Long, EJSON } = require("bson")
 const { v6: uuidV6 } = require("uuid")
 const { Cookie } = require("tough-cookie")
+
+const TEST_REGION = 'emea'
+const TEST_SERVICE_URL = `https://db.${TEST_REGION}.adobe.test`
 
 // Helper to construct the result object returned by an axios request
 function buildResponseTemplate(body = {}) {
@@ -56,7 +59,6 @@ function throwErrorResponse(message, responseCode = 500) {
 }
 
 const SESSION_COOKIE = 'adpsd-session-id'
-const ENDPOINT_DOMAIN = ENDPOINT_URL.replace(/^https?:\/\//, '')
 
 // Session configuration constants
 const SESSION_CONFIGS = {
@@ -232,8 +234,7 @@ const POST_ENDPOINT_RESULTS = [
   }
 ]
 
-// Slice off everything up to this point before checking route
-const ROUTE_START = ENDPOINT_URL.length + 1
+const urlMatcher = /^(?<baseUrl>https?:\/\/(?<domain>[^/]+))\/(?<route>.*)/
 
 class AxiosMock {
   constructor(config = undefined) {
@@ -247,7 +248,7 @@ class AxiosMock {
     }
   }
 
-  getCookieHeaders = async (url, sessionConfig) => {
+  getCookieHeaders = async (baseUrl, domain, sessionConfig) => {
     if (sessionConfig) {
       expect(this.cookieJar).toBeDefined()
     }
@@ -257,7 +258,7 @@ class AxiosMock {
     }
 
     const jar = this.cookieJar
-    const hasCookie = (await jar.store.findCookie(ENDPOINT_DOMAIN, '/', SESSION_COOKIE)) !== undefined
+    const hasCookie = (await jar.store.findCookie(domain, '/', SESSION_COOKIE)) !== undefined
     if (hasCookie && sessionConfig.sessionOnRequest === 'reject') {
       throwErrorResponse('Session already started', 403)
     }
@@ -268,39 +269,39 @@ class AxiosMock {
       await jar.setCookie(new Cookie({
         key: SESSION_COOKIE,
         value: uuidV6(),
-        domain: ENDPOINT_DOMAIN
-      }), ENDPOINT_URL)
+        domain
+      }), baseUrl)
     }
     if (sessionConfig.close) {
-      await jar.store.removeCookie(ENDPOINT_DOMAIN, '/', SESSION_COOKIE)
+      await jar.store.removeCookie(domain, '/', SESSION_COOKIE)
     }
-    return await jar.getSetCookieStrings(ENDPOINT_URL)
+    return await jar.getSetCookieStrings(baseUrl)
   }
 
   get = jest.fn(async (url, reqConfig) => {
-    url = url.slice(ROUTE_START)
+    const { baseUrl, domain, route } = url.match(urlMatcher).groups
     let result
     let sessionConfig
     for (const r of GET_ENDPOINT_RESULTS) {
-      if (r.route.test(url)) {
+      if (r.route.test(route)) {
         result = r.result
         sessionConfig = r.getSessionConfig?.()
         break
       }
     }
     if (result !== undefined) {
-      const cookies = await this.getCookieHeaders(url, sessionConfig)
+      const cookies = await this.getCookieHeaders(baseUrl, domain, sessionConfig)
       return getResponse(result, cookies)
     }
     throw new Error(`${url} did not match any mocked GET endpoint`)
   })
 
   post = jest.fn(async (url, body, reqConfig) => {
-    url = url.slice(ROUTE_START)
+    const { baseUrl, domain, route } = url.match(urlMatcher).groups
     let result
     let sessionConfig
     for (const r of POST_ENDPOINT_RESULTS) {
-      if (r.route.test(url)) {
+      if (r.route.test(route)) {
         result = r.result
         const bodyParsed = body ? EJSON.parse(body, { relaxed: false }) : {}
         sessionConfig = r.getSessionConfig?.(bodyParsed)
@@ -308,7 +309,7 @@ class AxiosMock {
       }
     }
     if (result !== undefined) {
-      const cookie = await this.getCookieHeaders(url, sessionConfig)
+      const cookie = await this.getCookieHeaders(baseUrl, domain, sessionConfig)
       return getResponse(result, cookie)
     }
     throw new Error(`${url} did not match any mocked POST endpoint`)
@@ -319,7 +320,7 @@ class AxiosMock {
     if (!this.cookieJar) {
       return []
     }
-    const cookies = (await this.cookieJar.getSetCookieStrings(ENDPOINT_URL)) || []
+    const cookies = (await this.cookieJar.getSetCookieStrings(TEST_SERVICE_URL)) || []
     // Filter cookies to only include the session cookie and return only the name=value part
     return cookies?.filter(c => c.startsWith(`${SESSION_COOKIE}=`)).map(c => c.split(';')[0])
   })
@@ -329,7 +330,9 @@ module.exports = {
   default: {
     create: jest.fn(config => new AxiosMock(config))
   },
-  // Export this value so cursor tests make sure to use the same ID as mocked results
+  // Export these values so tests make sure to use the same ones as mocked results
   // Can't put in testingUtils because it would cause circular dependency issues
-  TEST_CURSOR_ID
+  TEST_CURSOR_ID,
+  TEST_REGION,
+  TEST_SERVICE_URL
 }
