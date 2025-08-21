@@ -39,22 +39,25 @@ AIO_runtime_auth=user:password
 const libDb = require('@adobe/aio-lib-db');
 
 async function main() {
-  // Initialize and connect
-  const db = await libDb.init();
-  const client = await db.connect();
-  
-  // Get a collection
-  const users = client.collection('users');
-  
-  // Insert a document
-  await users.insertOne({ name: 'John Doe', email: 'john@example.com' });
-  
-  // Find documents
-  const cursor = users.find({ name: 'John Doe' });
-  const results = await cursor.toArray();
-  
-  // Close connection
-  await client.close();
+  try {
+    // Initialize and connect
+    const db = await libDb.init();
+    const client = await db.connect();
+
+    // Get a collection
+    const users = client.collection('users');
+
+    // Insert a document
+    await users.insertOne({ name: 'John Doe', email: 'john@example.com' });
+
+    // Find documents
+    const cursor = users.find({ name: 'John Doe' });
+    const results = await cursor.toArray();
+  }
+  finally {
+    // Close any open cursors when the application is done
+    await client.close();
+  }
 }
 ```
 
@@ -135,6 +138,8 @@ const deletedUser = await collection.findOneAndDelete({ email: 'john@example.com
 ---
 
 ## Query Building with Cursors
+
+> Cursors will close themselves after all results have been processed, but they can be closed early to release resources by calling `cursor.close()`, and best practice is to close them explicitly once they're no longer needed. The `client.close()` method will close all open cursors and connections, so it should be called when the application is shutting down or no longer needs database access.
 
 ### FindCursor Methods
 
@@ -431,7 +436,7 @@ const report = await collection.aggregate()
 - `listCollections(filter?, options?)` - List collections
 - `collection(name)` - Get collection instance
 - `createCollection(name, options?)` - Create new collection
-- `close()` - Close database connection
+- `close()` - Close the connection and all open cursors
 
 ### DbCollection
 
@@ -498,8 +503,7 @@ const report = await collection.aggregate()
 **Utilities:**
 - `map(transform)` - Transform documents
 - `stream(transform?)` - Get readable stream
-- `explain()` - Get query execution plan
-- `batchSize(size)` - Set batch size for iteration
+- `close()` - Close the cursor and release resources
 
 ### AggregateCursor
 
@@ -519,6 +523,13 @@ const report = await collection.aggregate()
 
 **Iteration:** (Same as FindCursor)
 - `hasNext()`, `next()`, `toArray()`, `stream()`, etc.
+
+**Properties:**
+- `id` - Get cursor ID
+- `closed` - Check if cursor is closed and exhausted
+
+**Utilities:**
+- `close()` - Close the cursor and release resources
 
 ---
 

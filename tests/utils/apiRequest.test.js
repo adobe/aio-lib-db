@@ -22,7 +22,7 @@ describe('API Request Tests', () => {
   })
 
   test('apiRequest attaches http code when error occurs', async () => {
-    db.axiosClientWithoutSession.get.mockImplementationOnce(() => {
+    db.axiosClient.get.mockImplementationOnce(() => {
       return Promise.reject(new AxiosError(
         'Not Found',
         undefined,
@@ -33,17 +33,17 @@ describe('API Request Tests', () => {
     })
 
     await expect(async () => {
-      await apiGet(db, 'db/ping')
+      await apiGet(db, db.axiosClient, 'db/ping')
     }).toThrowErrorWithProperties({ httpStatusCode: 404 }, 'DbError')
   })
 
   test('apiRequest attaches http code when response is not successful', async () => {
-    db.axiosClientWithoutSession.get.mockImplementationOnce(() => {
+    db.axiosClient.get.mockImplementationOnce(() => {
       return Promise.resolve({ data: { requestId: 'id', success: false, message: 'Request Failed' }, status: 200 })
     })
 
     await expect(async () => {
-      await apiGet(db, 'db/ping')
+      await apiGet(db, db.axiosClient, 'db/ping')
     }).toThrowErrorWithProperties({ httpStatusCode: 200 }, 'DbError')
   })
 })
