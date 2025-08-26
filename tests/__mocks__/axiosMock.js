@@ -231,6 +231,10 @@ const POST_ENDPOINT_RESULTS = [
   {
     route: RegExp(`^v1/db/provision/status$`),
     result: OBJECT_RESPONSE
+  },
+  {
+    route: RegExp(`^v1/db/delete/request$`),
+    result: OBJECT_RESPONSE
   }
 ]
 

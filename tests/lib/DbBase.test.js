@@ -23,6 +23,13 @@ describe('DbBase tests', () => {
     nonSessClient = db.axiosClient
   })
 
+
+  test('deleteDatabaseRequest calls the appropriate endpoint', async () => {
+    await db.deleteDatabaseRequest()
+    expect(nonSessClient).toHaveCalledServicePost('v1/db/delete/request')
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
+  })
+
   test('provisionRequest calls the appropriate endpoint', async () => {
     await db.provisionRequest()
     expect(nonSessClient).toHaveCalledServicePost('v1/db/provision/request')
