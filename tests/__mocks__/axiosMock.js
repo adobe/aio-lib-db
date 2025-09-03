@@ -233,7 +233,7 @@ const POST_ENDPOINT_RESULTS = [
     result: OBJECT_RESPONSE
   },
   {
-    route: RegExp(`^v1/db/delete/request$`),
+    route: RegExp(`^v1/db/delete$`),
     result: OBJECT_RESPONSE
   }
 ]
