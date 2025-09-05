@@ -18,6 +18,6 @@
   },
   "devDependencies": {
     "jest": "^29.5.0",
-    "uuid": "^11.1.0"
+    "uuid": "^12.0.0"
   }
 }
