@@ -35,6 +35,12 @@ describe('DbBase tests', () => {
     expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
+  test('deleteDatabase calls the appropriate endpoint', async () => {
+    await db.deleteDatabase()
+    expect(nonSessClient).toHaveCalledServicePost('v1/db/delete')
+    expect(await nonSessClient.getSessionCookies()).toEqual([])
+  })
+
   test('ping calls the appropriate endpoint', async () => {
     await db.ping()
     expect(nonSessClient).toHaveCalledServiceGet('v1/db/ping')
@@ -76,6 +82,8 @@ describe('DbBase tests', () => {
     expect(stageAxios).toHaveCalledServiceGet(`${stageUrl}/v1/db/ping`)
     await apiPost(dbStage, stageAxios, 'db/provision/status')
     expect(stageAxios).toHaveCalledServicePost(`${stageUrl}/v1/db/provision/status`)
+    await apiPost(dbStage, stageAxios, 'db/delete')
+    expect(stageAxios).toHaveCalledServicePost(`${stageUrl}/v1/db/delete`)
 
     process.env.AIO_CLI_ENV = 'prod'
     const dbProd = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
@@ -85,6 +93,8 @@ describe('DbBase tests', () => {
     expect(prodAxios).toHaveCalledServiceGet(`${prodUrl}/v1/db/ping`)
     await apiPost(dbProd, prodAxios, 'db/provision/status')
     expect(prodAxios).toHaveCalledServicePost(`${prodUrl}/v1/db/provision/status`)
+    await apiPost(dbProd, prodAxios, 'db/delete')
+    expect(prodAxios).toHaveCalledServicePost(`${prodUrl}/v1/db/delete`)
 
     // Should default to prod if AIO_CLI_ENV is not set
     delete process.env.AIO_CLI_ENV
@@ -95,6 +105,8 @@ describe('DbBase tests', () => {
     expect(defaultAxios).toHaveCalledServiceGet(`${prodUrl}/v1/db/ping`)
     await apiPost(dbDefault, defaultAxios, 'db/provision/status')
     expect(defaultAxios).toHaveCalledServicePost(`${prodUrl}/v1/db/provision/status`)
+    await apiPost(dbDefault, defaultAxios, 'db/delete')
+    expect(defaultAxios).toHaveCalledServicePost(`${prodUrl}/v1/db/delete`)
   })
 
   test('serviceUrl can be overridden with AIO_DB_ENDPOINT environment variable', async () => {
