@@ -31,7 +31,9 @@ const TEST_REQ_CONFIG = {
 
 beforeEach(() => {
   jest.clearAllMocks()
-  process.env.AIO_CLI_ENV = PROD_ENV // Set the environment to production for tests
+  // Set the environment to production for tests
+  process.env.AIO_DB_ENVIRONMENT = PROD_ENV
+  process.env.AIO_CLI_ENV = PROD_ENV // AIO_DB_ENVIRONMENT takes precedence over AIO_CLI_ENV, but we want to be sure
   delete process.env.AIO_DB_ENDPOINT // Ensure no endpoint override
 })
 

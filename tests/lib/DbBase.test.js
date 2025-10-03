@@ -11,7 +11,7 @@ governing permissions and limitations under the License.
 */
 const { getDb, TEST_NAMESPACE, TEST_AUTH } = require("../testingUtils")
 const DbBase = require("../../lib/DbBase")
-const { PROD_ENV, STAGE_ENV, ALLOWED_REGIONS } = require("../../lib/constants")
+const { PROD_ENV, STAGE_ENV, ALLOWED_REGIONS, ENDPOINTS } = require("../../lib/constants")
 const { apiGet, apiPost } = require("../../utils/apiRequest")
 
 describe('DbBase tests', () => {
@@ -53,10 +53,11 @@ describe('DbBase tests', () => {
     { env: STAGE_ENV, url: 'https://db-stage.<region>.adobe.test', regions: ALLOWED_REGIONS[STAGE_ENV] }
   ])('serviceUrl for $env environment is set based on region', async ({ env, url, regions }) => {
     if (env === 'default') {
-      delete process.env.AIO_CLI_ENV
+      delete process.env.AIO_DB_ENVIRONMENT
+      delete process.env.AIO_CLI_ENV // ensure CLI env used as backup is also not set
     }
     else {
-      process.env.AIO_CLI_ENV = env
+      process.env.AIO_DB_ENVIRONMENT = env
     }
 
     for (const region of regions) {
@@ -101,10 +102,11 @@ describe('DbBase tests', () => {
     { env: STAGE_ENV, allowed: ALLOWED_REGIONS[STAGE_ENV], otherEnvRegions: ALLOWED_REGIONS[PROD_ENV] }
   ])('throws error only for unsupported regions in $env environment', async ({ env, allowed, otherEnvRegions }) => {
     if (env === 'default') {
-      delete process.env.AIO_CLI_ENV
+      delete process.env.AIO_DB_ENVIRONMENT
+      delete process.env.AIO_CLI_ENV // ensure CLI env used as backup is also not set
     }
     else {
-      process.env.AIO_CLI_ENV = env
+      process.env.AIO_DB_ENVIRONMENT = env
     }
     const unsupported = [
       `unsupported-${env}-region`,
@@ -119,5 +121,38 @@ describe('DbBase tests', () => {
         DbBase.init({ region: r, namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
       ).rejects.toThrow(`Invalid region '${r}'`)
     }
+  })
+
+  test('serviceUrl prefers AIO_DB_ENVIRONMENT over AIO_CLI_ENV over default prod', async () => {
+    const region = 'amer'
+    const prodUrl = ENDPOINTS[PROD_ENV].replaceAll(/<region>/gi, region)
+    const stageUrl = ENDPOINTS[STAGE_ENV].replaceAll(/<region>/gi, region)
+
+    // Set AIO_DB_ENVIRONMENT to prod and AIO_CLI_ENV to stage, expect prod
+    process.env.AIO_DB_ENVIRONMENT = PROD_ENV
+    process.env.AIO_CLI_ENV = STAGE_ENV
+    let dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(dbInstance.serviceUrl).toBe(prodUrl)
+
+    // Set AIO_DB_ENVIRONMENT to stage and AIO_CLI_ENV to prod, expect stage
+    process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
+    process.env.AIO_CLI_ENV = PROD_ENV
+    dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(dbInstance.serviceUrl).toBe(stageUrl)
+
+    // Remove AIO_DB_ENVIRONMENT, expect AIO_CLI_ENV to take precedence
+    delete process.env.AIO_DB_ENVIRONMENT
+    process.env.AIO_CLI_ENV = PROD_ENV
+    dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(dbInstance.serviceUrl).toBe(prodUrl)
+
+    process.env.AIO_CLI_ENV = STAGE_ENV
+    dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(dbInstance.serviceUrl).toBe(stageUrl)
+
+    // Remove both, expect default prod
+    delete process.env.AIO_CLI_ENV
+    dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(dbInstance.serviceUrl).toBe(prodUrl)
   })
 })
