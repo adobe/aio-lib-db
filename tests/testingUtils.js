@@ -34,6 +34,7 @@ beforeEach(() => {
   // Set the environment to production for tests
   process.env.AIO_DB_ENVIRONMENT = PROD_ENV
   process.env.AIO_CLI_ENV = PROD_ENV // AIO_DB_ENVIRONMENT takes precedence over AIO_CLI_ENV, but we want to be sure
+  delete process.env.__OW_ACTIVATION_ID // Ensure running in the default context
   delete process.env.AIO_DB_ENDPOINT // Ensure no endpoint override
 })
 
