@@ -11,7 +11,7 @@ governing permissions and limitations under the License.
 */
 const { getDb, TEST_NAMESPACE, TEST_AUTH } = require("../testingUtils")
 const DbBase = require("../../lib/DbBase")
-const { ALLOWED_REGIONS } = require("../../lib/constants")
+const { PROD_ENV, STAGE_ENV, ALLOWED_REGIONS, ENDPOINTS } = require("../../lib/constants")
 const { apiGet, apiPost } = require("../../utils/apiRequest")
 
 describe('DbBase tests', () => {
@@ -47,66 +47,40 @@ describe('DbBase tests', () => {
     expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
-  test('serviceUrl is set based on region', async () => {
-    for (const region of ALLOWED_REGIONS) {
+  test.each([
+    { env: 'default', url: 'https://db.<region>.adobe.test', regions: ALLOWED_REGIONS[PROD_ENV] }, // default to prod
+    { env: PROD_ENV, url: 'https://db.<region>.adobe.test', regions: ALLOWED_REGIONS[PROD_ENV] },
+    { env: STAGE_ENV, url: 'https://db-stage.<region>.adobe.test', regions: ALLOWED_REGIONS[STAGE_ENV] }
+  ])('serviceUrl for $env environment is set based on region', async ({ env, url, regions }) => {
+    if (env === 'default') {
+      delete process.env.AIO_DB_ENVIRONMENT
+      delete process.env.AIO_CLI_ENV // ensure CLI env used as backup is also not set
+    }
+    else {
+      process.env.AIO_DB_ENVIRONMENT = env
+    }
+
+    for (const region of regions) {
+      const expectedUrl = url.replaceAll(/<region>/gi, region)
       const dbInstance = await DbBase.init({ region: region, namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
       const axiosClient = dbInstance.axiosClient
-      expect(dbInstance.serviceUrl).toBe(`https://db.${region}.adobe.test`)
+      expect(dbInstance.serviceUrl).toBe(expectedUrl)
       await apiGet(dbInstance, axiosClient, 'db/ping')
-      expect(axiosClient).toHaveCalledServiceGet(`https://db.${region}.adobe.test/v1/db/ping`)
+      expect(axiosClient).toHaveCalledServiceGet(`${expectedUrl}/v1/db/ping`)
       await apiPost(dbInstance, axiosClient, 'db/provision/status')
-      expect(axiosClient).toHaveCalledServicePost(`https://db.${region}.adobe.test/v1/db/provision/status`)
+      expect(axiosClient).toHaveCalledServicePost(`${expectedUrl}/v1/db/provision/status`)
     }
 
     // Test default region
-    const defaultRegion = ALLOWED_REGIONS.at(0)
+    const defaultRegion = regions.at(0)
+    const expectedUrl = url.replaceAll(/<region>/gi, defaultRegion)
     const defaultDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
     const axiosClient = defaultDb.axiosClient
-    expect(defaultDb.serviceUrl).toBe(`https://db.${defaultRegion}.adobe.test`)
+    expect(defaultDb.serviceUrl).toBe(expectedUrl)
     await apiGet(defaultDb, axiosClient, 'db/ping')
-    expect(axiosClient).toHaveCalledServiceGet(`https://db.${defaultRegion}.adobe.test/v1/db/ping`)
+    expect(axiosClient).toHaveCalledServiceGet(`${expectedUrl}/v1/db/ping`)
     await apiPost(defaultDb, axiosClient, 'db/provision/status')
-    expect(axiosClient).toHaveCalledServicePost(`https://db.${defaultRegion}.adobe.test/v1/db/provision/status`)
-  })
-
-  test('serviceUrl is set based on environment', async () => {
-    const defaultRegion = ALLOWED_REGIONS.at(0)
-    const prodUrl = `https://db.${defaultRegion}.adobe.test`
-    const stageUrl = `https://db-stage.${defaultRegion}.adobe.test`
-
-    process.env.AIO_CLI_ENV = 'stage'
-    const dbStage = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
-    const stageAxios = dbStage.axiosClient
-    expect(dbStage.serviceUrl).toBe(stageUrl)
-    await apiGet(dbStage, stageAxios, 'db/ping')
-    expect(stageAxios).toHaveCalledServiceGet(`${stageUrl}/v1/db/ping`)
-    await apiPost(dbStage, stageAxios, 'db/provision/status')
-    expect(stageAxios).toHaveCalledServicePost(`${stageUrl}/v1/db/provision/status`)
-    await apiPost(dbStage, stageAxios, 'db/delete')
-    expect(stageAxios).toHaveCalledServicePost(`${stageUrl}/v1/db/delete`)
-
-    process.env.AIO_CLI_ENV = 'prod'
-    const dbProd = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
-    const prodAxios = dbProd.axiosClient
-    expect(dbProd.serviceUrl).toBe(prodUrl)
-    await apiGet(dbProd, prodAxios, 'db/ping')
-    expect(prodAxios).toHaveCalledServiceGet(`${prodUrl}/v1/db/ping`)
-    await apiPost(dbProd, prodAxios, 'db/provision/status')
-    expect(prodAxios).toHaveCalledServicePost(`${prodUrl}/v1/db/provision/status`)
-    await apiPost(dbProd, prodAxios, 'db/delete')
-    expect(prodAxios).toHaveCalledServicePost(`${prodUrl}/v1/db/delete`)
-
-    // Should default to prod if AIO_CLI_ENV is not set
-    delete process.env.AIO_CLI_ENV
-    const dbDefault = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
-    const defaultAxios = dbDefault.axiosClient
-    expect(dbDefault.serviceUrl).toBe(prodUrl)
-    await apiGet(dbDefault, defaultAxios, 'db/ping')
-    expect(defaultAxios).toHaveCalledServiceGet(`${prodUrl}/v1/db/ping`)
-    await apiPost(dbDefault, defaultAxios, 'db/provision/status')
-    expect(defaultAxios).toHaveCalledServicePost(`${prodUrl}/v1/db/provision/status`)
-    await apiPost(dbDefault, defaultAxios, 'db/delete')
-    expect(defaultAxios).toHaveCalledServicePost(`${prodUrl}/v1/db/delete`)
+    expect(axiosClient).toHaveCalledServicePost(`${expectedUrl}/v1/db/provision/status`)
   })
 
   test('serviceUrl can be overridden with AIO_DB_ENDPOINT environment variable', async () => {
@@ -122,12 +96,63 @@ describe('DbBase tests', () => {
     expect(axiosClient).toHaveCalledServicePost(`${customEndpoint}/v1/db/provision/status`)
   })
 
-  test('throws error for unsupported region', async () => {
-    const unsupportedRegion = 'unsupported-region'
-    await expect(DbBase.init({
-      region: unsupportedRegion,
-      namespace: TEST_NAMESPACE,
-      apikey: TEST_AUTH
-    })).rejects.toThrow(`Invalid region '${unsupportedRegion}'`)
+  test.each([
+    { env: 'default', allowed: ALLOWED_REGIONS[PROD_ENV], otherEnvRegions: ALLOWED_REGIONS[STAGE_ENV] }, // default prod
+    { env: PROD_ENV, allowed: ALLOWED_REGIONS[PROD_ENV], otherEnvRegions: ALLOWED_REGIONS[STAGE_ENV] },
+    { env: STAGE_ENV, allowed: ALLOWED_REGIONS[STAGE_ENV], otherEnvRegions: ALLOWED_REGIONS[PROD_ENV] }
+  ])('throws error only for unsupported regions in $env environment', async ({ env, allowed, otherEnvRegions }) => {
+    if (env === 'default') {
+      delete process.env.AIO_DB_ENVIRONMENT
+      delete process.env.AIO_CLI_ENV // ensure CLI env used as backup is also not set
+    }
+    else {
+      process.env.AIO_DB_ENVIRONMENT = env
+    }
+    const unsupported = [
+      `unsupported-${env}-region`,
+      ...otherEnvRegions.filter(r => !allowed.includes(r))
+    ]
+
+    for (const r of allowed) {
+      await expect(DbBase.init({ region: r, namespace: TEST_NAMESPACE, apikey: TEST_AUTH })).resolves
+    }
+    for (const r of unsupported) {
+      await expect(
+        DbBase.init({ region: r, namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
+      ).rejects.toThrow(`Invalid region '${r}'`)
+    }
+  })
+
+  test('serviceUrl prefers AIO_DB_ENVIRONMENT over AIO_CLI_ENV over default prod', async () => {
+    const region = 'amer'
+    const prodUrl = ENDPOINTS[PROD_ENV].replaceAll(/<region>/gi, region)
+    const stageUrl = ENDPOINTS[STAGE_ENV].replaceAll(/<region>/gi, region)
+
+    // Set AIO_DB_ENVIRONMENT to prod and AIO_CLI_ENV to stage, expect prod
+    process.env.AIO_DB_ENVIRONMENT = PROD_ENV
+    process.env.AIO_CLI_ENV = STAGE_ENV
+    let dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(dbInstance.serviceUrl).toBe(prodUrl)
+
+    // Set AIO_DB_ENVIRONMENT to stage and AIO_CLI_ENV to prod, expect stage
+    process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
+    process.env.AIO_CLI_ENV = PROD_ENV
+    dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(dbInstance.serviceUrl).toBe(stageUrl)
+
+    // Remove AIO_DB_ENVIRONMENT, expect AIO_CLI_ENV to take precedence
+    delete process.env.AIO_DB_ENVIRONMENT
+    process.env.AIO_CLI_ENV = PROD_ENV
+    dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(dbInstance.serviceUrl).toBe(prodUrl)
+
+    process.env.AIO_CLI_ENV = STAGE_ENV
+    dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(dbInstance.serviceUrl).toBe(stageUrl)
+
+    // Remove both, expect default prod
+    delete process.env.AIO_CLI_ENV
+    dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(dbInstance.serviceUrl).toBe(prodUrl)
   })
 })
