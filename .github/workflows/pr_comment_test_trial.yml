@@ -23,7 +23,7 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     # https://docs.github.com/en/webhooks/webhook-events-and-payloads#issue_comment
     # No easy way to get the sha of the current PR. So instead get its number and use
     # the number with https://cli.github.com/manual/gh_pr_view to get name and sha.
