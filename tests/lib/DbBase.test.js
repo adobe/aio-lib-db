@@ -13,6 +13,7 @@ const { getDb, TEST_NAMESPACE, TEST_AUTH } = require("../testingUtils")
 const DbBase = require("../../lib/DbBase")
 const { PROD_ENV, STAGE_ENV, ALLOWED_REGIONS, ENDPOINTS, EXECUTION_CONTEXT } = require("../../lib/constants")
 const { apiGet, apiPost } = require("../../utils/apiRequest")
+const { getCliEnv } = require('@adobe/aio-lib-env')
 
 describe('DbBase tests', () => {
   let db
@@ -50,11 +51,10 @@ describe('DbBase tests', () => {
   test.each([
     { env: 'default', url: 'https://db.<region>.adobe.test', regions: ALLOWED_REGIONS[PROD_ENV] }, // default to prod
     { env: PROD_ENV, url: 'https://db.<region>.adobe.test', regions: ALLOWED_REGIONS[PROD_ENV] },
-    { env: STAGE_ENV, url: 'https://db-stage.<region>.adobe.test', regions: ALLOWED_REGIONS[STAGE_ENV] }
+    { env: STAGE_ENV, url: 'https://db-stg.<region>.adobe.test', regions: ALLOWED_REGIONS[STAGE_ENV] }
   ])('serviceUrl for $env environment is set based on region', async ({ env, url, regions }) => {
     if (env === 'default') {
       delete process.env.AIO_DB_ENVIRONMENT
-      delete process.env.AIO_CLI_ENV // ensure CLI env used as backup is also not set
     }
     else {
       process.env.AIO_DB_ENVIRONMENT = env
@@ -117,7 +117,6 @@ describe('DbBase tests', () => {
   ])('throws error only for unsupported regions in $env environment', async ({ env, allowed, otherEnvRegions }) => {
     if (env === 'default') {
       delete process.env.AIO_DB_ENVIRONMENT
-      delete process.env.AIO_CLI_ENV // ensure CLI env used as backup is also not set
     }
     else {
       process.env.AIO_DB_ENVIRONMENT = env
@@ -137,37 +136,32 @@ describe('DbBase tests', () => {
     }
   })
 
-  test('serviceUrl prefers AIO_DB_ENVIRONMENT over AIO_CLI_ENV over default prod', async () => {
+  test('serviceUrl prefers AIO_DB_ENVIRONMENT over getCliEnv()', async () => {
     const region = 'amer'
     const prodUrl = ENDPOINTS[EXECUTION_CONTEXT.EXTERNAL][PROD_ENV].replaceAll(/<region>/gi, region)
     const stageUrl = ENDPOINTS[EXECUTION_CONTEXT.EXTERNAL][STAGE_ENV].replaceAll(/<region>/gi, region)
 
-    // Set AIO_DB_ENVIRONMENT to prod and AIO_CLI_ENV to stage, expect prod
+    // Set AIO_DB_ENVIRONMENT to prod and getCliEnv() to stage, expect prod
     process.env.AIO_DB_ENVIRONMENT = PROD_ENV
-    process.env.AIO_CLI_ENV = STAGE_ENV
+    getCliEnv.mockReturnValue(STAGE_ENV)
     let dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
     expect(dbInstance.serviceUrl).toBe(prodUrl)
 
-    // Set AIO_DB_ENVIRONMENT to stage and AIO_CLI_ENV to prod, expect stage
+    // Set AIO_DB_ENVIRONMENT to stage and getCliEnv() to prod, expect stage
     process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
-    process.env.AIO_CLI_ENV = PROD_ENV
+    getCliEnv.mockReturnValue(PROD_ENV)
     dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
     expect(dbInstance.serviceUrl).toBe(stageUrl)
 
-    // Remove AIO_DB_ENVIRONMENT, expect AIO_CLI_ENV to take precedence
+    // Remove AIO_DB_ENVIRONMENT, expect getCliEnv() to take precedence
     delete process.env.AIO_DB_ENVIRONMENT
-    process.env.AIO_CLI_ENV = PROD_ENV
+    getCliEnv.mockReturnValue(PROD_ENV)
     dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
     expect(dbInstance.serviceUrl).toBe(prodUrl)
 
-    process.env.AIO_CLI_ENV = STAGE_ENV
+    getCliEnv.mockReturnValue(STAGE_ENV)
     dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
     expect(dbInstance.serviceUrl).toBe(stageUrl)
-
-    // Remove both, expect default prod
-    delete process.env.AIO_CLI_ENV
-    dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
-    expect(dbInstance.serviceUrl).toBe(prodUrl)
   })
 
   test('uses correct endpoints based on execution context', async () => {
