@@ -11,7 +11,7 @@ governing permissions and limitations under the License.
 */
 const { RUNTIME_HEADER, PROD_ENV } = require("../lib/constants")
 const DbBase = require("../lib/DbBase")
-const { default: axios, TEST_REGION, TEST_SERVICE_URL } = require('axios')
+const { default: axios, TEST_REGION, TEST_SERVICE_URL } = require('axios-old')
 const { HttpCookieAgent, HttpsCookieAgent } = require("http-cookie-agent/http")
 const { EJSON } = require("bson")
 jest.mock('@adobe/aio-lib-env', () => ({

@@ -10,7 +10,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@adobe/aio-lib-env": "^3.0.1",
-    "axios": "^1.8.4",
+    "axios-old": "npm:axios@^1.11.0",
     "bson": "^6.10.3",
     "dotenv": "^17.0.0",
     "http-cookie-agent": "^7.0.1",
