@@ -11,13 +11,9 @@ governing permissions and limitations under the License.
 */
 const { RUNTIME_HEADER, PROD_ENV } = require("../lib/constants")
 const DbBase = require("../lib/DbBase")
-const { default: axios, TEST_REGION, TEST_SERVICE_URL } = require('axios-old')
+const { default: axios, TEST_REGION, TEST_SERVICE_URL } = require('axios')
 const { HttpCookieAgent, HttpsCookieAgent } = require("http-cookie-agent/http")
 const { EJSON } = require("bson")
-jest.mock('@adobe/aio-lib-env', () => ({
-  getCliEnv: jest.fn()
-}))
-const { getCliEnv } = require('@adobe/aio-lib-env')
 
 const TEST_USER = 'testUser'
 const TEST_PASS = 'testPass'
@@ -35,11 +31,7 @@ const TEST_REQ_CONFIG = {
 
 beforeEach(() => {
   jest.clearAllMocks()
-  // Set the environment to production for tests
-  process.env.AIO_DB_ENVIRONMENT = PROD_ENV
-  getCliEnv.mockReset()
-  getCliEnv.mockReturnValue(PROD_ENV)
-  delete process.env.__OW_ACTIVATION_ID // Ensure running in the default context
+  process.env.AIO_CLI_ENV = PROD_ENV // Set the environment to production for tests
   delete process.env.AIO_DB_ENDPOINT // Ensure no endpoint override
 })
 

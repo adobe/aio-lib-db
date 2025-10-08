@@ -10,7 +10,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 const { getDb } = require("../testingUtils")
-const { AxiosError } = jest.requireActual("axios-old")
+const { AxiosError } = jest.requireActual("axios")
 const { apiGet } = require("../../utils/apiRequest")
 
 describe('API Request Tests', () => {

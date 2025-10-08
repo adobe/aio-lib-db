@@ -11,9 +11,9 @@ jobs:
       matrix:
         node: [ 20, 22, 24 ] # Node versions before 20 are EoL
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
       - name: Set up Node.js ${{ matrix.node }}
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
       - name: Install dependencies
