@@ -6,17 +6,11 @@
 
 ## Installation
 
-Currently, `aio-lib-db` is used locally. Install it by adding it to your `package.json` file:
+Install the library using npm:
 
-```json
-{
-  "dependencies": {
-    "@adobe/aio-lib-db": "file:../path/to/aio-lib-db"
-  }
-}
+```bash
+npm install @adobe/aio-lib-db
 ```
-
-> **Note:** In the future, the library will be available on npm for easier installation.
 
 ---
 
@@ -35,7 +29,7 @@ __OW_API_KEY=user:password
 
 ### Basic Usage
 
-> When calling `libDb.init()`, you can pass `{ region: '<region>>' }` to specify the region where your database is provisioned.  
+> When calling `libDb.init()`, you can pass `{ region: '<region>' }` to specify the region where your database is provisioned.  
 > Valid regions are `amer` (default), `emea`, and `apac`.
 
 ```javascript
@@ -152,7 +146,7 @@ The `find()` method returns a `FindCursor` that supports method chaining:
 const cursor = collection.find({ status: 'active' })
   .filter({ category: 'premium' })          // Additional filtering
   .sort({ createdAt: -1 })                  // Sort by creation date (newest first)
-  .project({ name: 1, email: 1, _id: 0 })  // Only include name and email
+  .project({ name: 1, email: 1, _id: 0 })   // Only include name and email
   .limit(20)                                // Limit to 20 results
   .skip(10)                                 // Skip first 10 results
   .batchSize(5);                            // Process in batches of 5
@@ -351,11 +345,11 @@ const newCollection = await client.createCollection('analytics', {
 ```javascript
 // Advanced query options
 const cursor = collection.find({ status: 'active' })
-  .hint({ status: 1 })                    // Use specific index
-  .maxTimeMS(5000)                        // Set query timeout
-  .readConcern({ level: 'majority' })     // Set read concern
+  .hint({ status: 1 })                      // Use specific index
+  .maxTimeMS(5000)                          // Set query timeout
+  .readConcern({ level: 'majority' })       // Set read concern
   .collation({ locale: 'en', strength: 2 }) // Case-insensitive sorting
-  .noCursorTimeout(true);                 // Disable cursor timeout
+  .noCursorTimeout(true);                   // Disable cursor timeout
 ```
 
 ---
