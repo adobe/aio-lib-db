@@ -11,7 +11,9 @@ governing permissions and limitations under the License.
 */
 const { getDb, TEST_NAMESPACE, TEST_AUTH } = require("../testingUtils")
 const DbBase = require("../../lib/DbBase")
-const { PROD_ENV, STAGE_ENV, ALLOWED_REGIONS, ENDPOINTS, EXECUTION_CONTEXT } = require("../../lib/constants")
+const {
+  PROD_ENV, STAGE_ENV, ALLOWED_REGIONS, PROD_ENDPOINT_EXTERNAL, STAGE_ENDPOINT, PROD_ENDPOINT_RUNTIME
+} = require("../../lib/constants")
 const { apiGet, apiPost } = require("../../utils/apiRequest")
 const { getCliEnv } = require('@adobe/aio-lib-env')
 
@@ -138,8 +140,8 @@ describe('DbBase tests', () => {
 
   test('serviceUrl prefers AIO_DB_ENVIRONMENT over getCliEnv()', async () => {
     const region = 'amer'
-    const prodUrl = ENDPOINTS[EXECUTION_CONTEXT.EXTERNAL][PROD_ENV].replaceAll(/<region>/gi, region)
-    const stageUrl = ENDPOINTS[EXECUTION_CONTEXT.EXTERNAL][STAGE_ENV].replaceAll(/<region>/gi, region)
+    const prodUrl = PROD_ENDPOINT_EXTERNAL.replaceAll(/<region>/gi, region)
+    const stageUrl = STAGE_ENDPOINT.replaceAll(/<region>/gi, region)
 
     // Set AIO_DB_ENVIRONMENT to prod and getCliEnv() to stage, expect prod
     process.env.AIO_DB_ENVIRONMENT = PROD_ENV
@@ -166,19 +168,17 @@ describe('DbBase tests', () => {
 
   test('uses correct endpoints based on execution context', async () => {
     const region = 'amer'
-    const runtimeEndpoints = ENDPOINTS[EXECUTION_CONTEXT.RUNTIME]
-    const externalEndpoints = ENDPOINTS[EXECUTION_CONTEXT.EXTERNAL]
 
     // Test with __OW_ACTIVATION_ID set (runtime context)
     process.env.__OW_ACTIVATION_ID = 'some-activation-id'
 
     process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
-    const runtimeStageUrl = runtimeEndpoints[STAGE_ENV].replaceAll(/<region>/gi, region)
+    const stageUrl = STAGE_ENDPOINT.replaceAll(/<region>/gi, region)
     const runtimeStageDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
-    expect(runtimeStageDb.serviceUrl).toBe(runtimeStageUrl)
+    expect(runtimeStageDb.serviceUrl).toBe(stageUrl)
 
     process.env.AIO_DB_ENVIRONMENT = PROD_ENV
-    const runtimeProdUrl = runtimeEndpoints[PROD_ENV].replaceAll(/<region>/gi, region)
+    const runtimeProdUrl = PROD_ENDPOINT_RUNTIME.replaceAll(/<region>/gi, region)
     const runtimeProdDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
     expect(runtimeProdDb.serviceUrl).toBe(runtimeProdUrl)
 
@@ -186,12 +186,12 @@ describe('DbBase tests', () => {
     delete process.env.__OW_ACTIVATION_ID
 
     process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
-    const externalStageUrl = externalEndpoints[STAGE_ENV].replaceAll(/<region>/gi, region)
+    // Stage endpoint is the same for both contexts
     const externalStageDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
-    expect(externalStageDb.serviceUrl).toBe(externalStageUrl)
+    expect(externalStageDb.serviceUrl).toBe(stageUrl)
 
     process.env.AIO_DB_ENVIRONMENT = PROD_ENV
-    const externalProdUrl = externalEndpoints[PROD_ENV].replaceAll(/<region>/gi, region)
+    const externalProdUrl = PROD_ENDPOINT_EXTERNAL.replaceAll(/<region>/gi, region)
     const externalProdDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
     expect(externalProdDb.serviceUrl).toBe(externalProdUrl)
   })
