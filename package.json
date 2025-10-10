@@ -6,8 +6,22 @@
   "scripts": {
     "test": "jest --passWithNoTests"
   },
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "lib/",
+    "index.js",
+    "README.md",
+    "LICENSE",
+    "COPYRIGHT"
+  ],
   "author": "Adobe Inc.",
   "license": "Apache-2.0",
+  "maintainers": [
+    "Adobe Inc."
+  ],
+  "contributors": [],
   "dependencies": {
     "@adobe/aio-lib-env": "^3.0.1",
     "axios": "^1.8.4",
@@ -19,5 +33,31 @@
   "devDependencies": {
     "jest": "^30.0.0",
     "uuid": "^11.1.0"
+  },
+  "keywords": [
+    "adobe",
+    "aio",
+    "database",
+    "document-db",
+    "mongodb",
+    "runtime",
+    "adobe-io",
+    "serverless"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adobe/aio-lib-db.git"
+  },
+  "bugs": "https://github.com/adobe/aio-lib-db/issues",
+  "homepage": "https://github.com/adobe/aio-lib-db#readme",
+  "funding": {
+    "type": "individual",
+    "url": "https://github.com/sponsors/adobe"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
