@@ -45,9 +45,3 @@ jobs:
           token: ${{ secrets.ADOBE_BOT_NPM_TOKEN }}
           tag: ${{ steps.release.outputs.tag }}
           access: 'public'
-      
-      - name: Output release info
-        run: |
-          echo "Published version ${{ steps.release.outputs.version }}"
-          echo "NPM tag: ${{ steps.release.outputs.tag }}"
-          echo "Release level: ${{ steps.release.outputs.level }}"
