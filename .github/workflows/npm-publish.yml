@@ -36,10 +36,6 @@ jobs:
           echo "Tag: $TAG"
           echo "Level: $LEVEL"
           
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "level=$LEVEL" >> $GITHUB_OUTPUT
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          
       - uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.ADOBE_BOT_NPM_TOKEN }}
