@@ -9,37 +9,64 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
-      - run: npm install && npm test
-      
-      - name: Determine npm tag and level
-        id: release
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
           
-          # Detect tag from version
-          if [[ $VERSION == *"alpha"* ]]; then
-            TAG="alpha"
-            LEVEL="prerelease"
-          elif [[ $VERSION == *"beta"* ]]; then
-            TAG="beta"
-            LEVEL="prerelease"
+      - name: Check package version
+        id: version_check
+        run: |
+          CURRENT_VERSION=$(jq -r '.version' package.json)
+          PACKAGE_NAME=$(jq -r '.name' package.json)
+          
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Check if this SPECIFIC VERSION exists
+          PUBLISHED_VERSION=$(npm view "$PACKAGE_NAME@$CURRENT_VERSION" version 2>/dev/null || echo "not-found")
+          echo "Published version: $PUBLISHED_VERSION"
+          
+          # Compare versions
+          if [ "$CURRENT_VERSION" != "$PUBLISHED_VERSION" ]; then
+            echo "Version $CURRENT_VERSION not yet published"
+            echo "should_publish=true" >> $GITHUB_OUTPUT
           else
-            TAG="latest"
-            LEVEL="stable"
+            echo "Version $CURRENT_VERSION already published, skipping"
+            echo "should_publish=false" >> $GITHUB_OUTPUT
           fi
           
-          echo "Version: $VERSION"
-          echo "Tag: $TAG"
-          echo "Level: $LEVEL"
+          # Determine npm tag for publishing
+          if [[ $CURRENT_VERSION == *"alpha"* ]]; then
+            NPM_TAG="alpha"
+          elif [[ $CURRENT_VERSION == *"beta"* ]]; then
+            NPM_TAG="beta"
+          else
+            NPM_TAG="latest"
+          fi
           
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Will publish to npm tag: $NPM_TAG"
           
-      - uses: JS-DevTools/npm-publish@v3
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
+          
+      - name: Install and test
+        if: steps.version_check.outputs.should_publish == 'true'
+        run: npm install && npm test
+      
+      - name: Create git tag
+        if: steps.version_check.outputs.should_publish == 'true'
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          VERSION="${{ steps.version_check.outputs.version }}"
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+          git push origin "v$VERSION"
+      
+      - name: Publish to NPM
+        if: steps.version_check.outputs.should_publish == 'true'
+        uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.ADOBE_BOT_NPM_TOKEN }}
-          tag: ${{ steps.release.outputs.tag }}
+          tag: ${{ steps.version_check.outputs.npm_tag }}
           access: 'public'
+          
