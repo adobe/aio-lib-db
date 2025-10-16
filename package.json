@@ -9,13 +9,6 @@
   "exports": {
     ".": "./index.js"
   },
-  "files": [
-    "lib/",
-    "index.js",
-    "README.md",
-    "LICENSE",
-    "COPYRIGHT"
-  ],
   "author": "Adobe Inc.",
   "license": "Apache-2.0",
   "maintainers": [
