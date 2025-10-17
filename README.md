@@ -6,17 +6,21 @@
 
 ## Installation
 
-Currently, `aio-lib-db` is used locally. Install it by adding it to your `package.json` file:
+Install `aio-lib-db` from npm:
+
+```bash
+npm install @adobe/aio-lib-db
+```
+
+Or add it to your `package.json`:
 
 ```json
 {
   "dependencies": {
-    "@adobe/aio-lib-db": "file:../path/to/aio-lib-db"
+    "@adobe/aio-lib-db": "^0.1.0"
   }
 }
 ```
-
-> **Note:** In the future, the library will be available on npm for easier installation.
 
 ---
 

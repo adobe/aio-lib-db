@@ -1,0 +1,13 @@
+# Exclude all files not listed below
+/*
+
+# Include these files/directories
+!/lib/
+!/utils/
+!index.js
+!README.md
+!LICENSE
+!COPYRIGHT
+
+# Exclude any mocks
+__mocks__/
