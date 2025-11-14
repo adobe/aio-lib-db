@@ -13,11 +13,11 @@ governing permissions and limitations under the License.
 const fs = require('fs')
 const path = require('path')
 const yaml = require('js-yaml')
-const { 
-  getFilePath, 
-  readYamlConfig, 
-  getRuntimeManifestFromAppConfig, 
-  getRegionFromAppConfig 
+const {
+  getFilePath,
+  readYamlConfig,
+  getRuntimeManifestFromAppConfig,
+  getRegionFromAppConfig
 } = require('../../utils/manifestUtils')
 
 // Mock fs, path, and yaml modules
