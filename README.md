@@ -39,7 +39,12 @@ __OW_API_KEY=user:password
 
 ### Basic Usage
 
-> When calling `libDb.init()`, you can pass `{ region: '<region>>' }` to specify the region where your database is provisioned.  
+> When calling `libDb.init()`, you can pass `{ region: '<region>>' }` to specify the region where your database is provisioned, or if region is defined in `app.config.yaml` of aio app, then `libDb.init()` will initialize in specified region.
+> 
+> **Note:** region defined in `app.config.yaml` holds preference over passed in config param.
+> 
+> If region is not specified in any of the above ways, it falls back to default.
+> 
 > Valid regions are `amer` (default), `emea`, and `apac`.
 
 ```javascript
