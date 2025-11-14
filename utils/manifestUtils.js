@@ -69,7 +69,7 @@ function getRuntimeManifestFromAppConfig(startDir) {
 /**
  * Extract region from app config manifest
  *
- * @param {string} startDir - Starting directory to search from  
+ * @param {string} startDir - Starting directory to search from
  * @returns {string|null} Region string or null if not found
  */
 function getRegionFromAppConfig(startDir) {
