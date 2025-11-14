@@ -16,6 +16,9 @@ const {
 } = require("../../lib/constants")
 const { apiGet, apiPost } = require("../../utils/apiRequest")
 const { getCliEnv } = require('@adobe/aio-lib-env')
+const { getRegionFromAppConfig } = require("../../utils/manifestUtils")
+
+jest.mock("../../utils/manifestUtils")
 
 describe('DbBase tests', () => {
   let db
@@ -194,5 +197,39 @@ describe('DbBase tests', () => {
     const externalProdUrl = PROD_ENDPOINT_EXTERNAL.replaceAll(/<region>/gi, region)
     const externalProdDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
     expect(externalProdDb.serviceUrl).toBe(externalProdUrl)
+  })
+
+  test('db should be intialized in region from manifest when available', async () => {
+    getRegionFromAppConfig.mockReturnValue('emea')
+    
+    const db = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
+    
+    expect(db.region).toBe('emea')
+    expect(getRegionFromAppConfig).toHaveBeenCalledWith(process.cwd())
+  })
+
+  test('db intilization should fall back to config.region when manifest is not available', async () => {
+    getRegionFromAppConfig.mockReturnValue(null)
+    
+    const db = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region: 'apac' })
+    
+    expect(db.region).toBe('apac')
+  })
+
+  test('db initialization should throw error when manifest parsing fails', async () => {
+    getRegionFromAppConfig.mockImplementation(() => {
+      throw new Error('YAML parsing error')
+    })
+    
+    await expect(DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region: 'amer' }))
+      .rejects.toThrow('Error reading region from app config: YAML parsing error')
+  })
+
+  test('db initialization should use default region when no manifest or config region available', async () => {
+    getRegionFromAppConfig.mockReturnValue(null)
+    
+    const db = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
+    
+    expect(db.region).toBe(ALLOWED_REGIONS[getCliEnv()].at(0))
   })
 })

@@ -21,7 +21,8 @@
     "bson": "^6.10.3",
     "dotenv": "^17.0.0",
     "http-cookie-agent": "^7.0.1",
-    "tough-cookie": "^5.1.2"
+    "tough-cookie": "^5.1.2",
+    "js-yaml": "^4.1.0"
   },
   "devDependencies": {
     "jest": "^30.0.0",
