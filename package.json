@@ -20,7 +20,7 @@
     "axios": "^1.8.4",
     "bson": "^6.10.3",
     "dotenv": "^17.0.0",
-    "http-cookie-agent": "^6.0.8",
+    "http-cookie-agent": "^7.0.0",
     "tough-cookie": "^5.1.2"
   },
   "devDependencies": {
