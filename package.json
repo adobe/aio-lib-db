@@ -24,7 +24,7 @@
     "tough-cookie": "^5.1.2"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
+    "jest": "^30.0.0",
     "uuid": "^11.1.0"
   },
   "keywords": [
