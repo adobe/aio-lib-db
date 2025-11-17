@@ -20,7 +20,7 @@
     "axios": "^1.8.4",
     "bson": "^6.10.3",
     "dotenv": "^17.0.0",
-    "http-cookie-agent": "^7.0.1",
+    "http-cookie-agent": "^6.0.8",
     "tough-cookie": "^5.1.2"
   },
   "devDependencies": {
@@ -48,7 +48,7 @@
     "url": "https://github.com/sponsors/adobe"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=18.0.0"
   },
   "publishConfig": {
     "access": "public"
