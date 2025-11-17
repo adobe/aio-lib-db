@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-          
+
       - name: Check package version
         id: version_check
         run: |
@@ -24,7 +24,9 @@ jobs:
           
           # Check if this SPECIFIC VERSION exists
           PUBLISHED_VERSION=$(npm view "$PACKAGE_NAME@$CURRENT_VERSION" version 2>/dev/null || echo "not-found")
+          NPM_LATEST=$(npm view "$PACKAGE_NAME" version)
           echo "Published version: $PUBLISHED_VERSION"
+          echo "NPM version tagged as latest: $NPM_LATEST"
           
           # Compare versions
           if [ "$CURRENT_VERSION" != "$PUBLISHED_VERSION" ]; then
@@ -36,7 +38,9 @@ jobs:
           fi
           
           # Determine npm tag for publishing
-          if [[ $CURRENT_VERSION == *"alpha"* ]]; then
+          if [[ $CURRENT_VERSION == "0."* && $NPM_LATEST == "0."* ]]; then
+            NPM_TAG="latest"
+          elif [[ $CURRENT_VERSION == *"alpha"* ]]; then
             NPM_TAG="alpha"
           elif [[ $CURRENT_VERSION == *"beta"* ]]; then
             NPM_TAG="beta"
@@ -48,17 +52,17 @@ jobs:
           
           echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
-          
+
       - name: Install and audit dependencies
         if: steps.version_check.outputs.should_publish == 'true'
         run: |
           npm install
           npm audit --audit-level=high
-          
+
       - name: Run tests
         if: steps.version_check.outputs.should_publish == 'true'
         run: npm test
-      
+
       - name: Publish to NPM
         if: steps.version_check.outputs.should_publish == 'true'
         uses: JS-DevTools/npm-publish@v3
@@ -66,7 +70,7 @@ jobs:
           token: ${{ secrets.ADOBE_BOT_NPM_TOKEN }}
           tag: ${{ steps.version_check.outputs.npm_tag }}
           access: 'public'
-      
+
       - name: Create git tag
         if: steps.version_check.outputs.should_publish == 'true'
         run: |
