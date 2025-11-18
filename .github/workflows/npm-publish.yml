@@ -1,15 +1,5 @@
 name: on-push-publish-to-npm
 on:
-  workflow_dispatch:
-    inputs:
-      force_publish:
-        description: "Force publish even if version already exists on NPM"
-        required: false
-        type: choice
-        default: "false"
-        options:
-          - "true"
-          - "false"
   push:
     branches:
       - main
@@ -39,9 +29,6 @@ jobs:
           echo "NPM version tagged as latest: $NPM_LATEST"
           
           # Compare versions
-          if [ "${{ github.event.inputs.force_publish }}" == "true" ]; then
-            echo "Force publish enabled"
-            echo "should_publish=true" >> $GITHUB_OUTPUT
           if [ "$CURRENT_VERSION" != "$PUBLISHED_VERSION" ]; then
             echo "Version $CURRENT_VERSION not yet published"
             echo "should_publish=true" >> $GITHUB_OUTPUT
@@ -50,36 +37,21 @@ jobs:
             echo "should_publish=false" >> $GITHUB_OUTPUT
           fi
           
-          # Determine npm tags for publishing
-          LATEST_TAG="false"
-          PRE_TAG="false"
-          NEXT_TAG="false"
-
-          # Consider all pre-1.0.0 versions as latest, even if alpha/beta
-          # Still need to also publish to next for prereleases
+          # Determine npm tag for publishing
           if [[ $CURRENT_VERSION == "0."* && $NPM_LATEST == "0."* ]]; then
-            LATEST_TAG="true"
-            NEXT_TAG="true"
-          fi
-
-          if [[ $CURRENT_VERSION == *"alpha"* ]]; then
-            PRE_TAG="alpha"
-            NEXT_TAG="true"
+            NPM_TAG="latest"
+          elif [[ $CURRENT_VERSION == *"alpha"* ]]; then
+            NPM_TAG="alpha"
           elif [[ $CURRENT_VERSION == *"beta"* ]]; then
-            PRE_TAG="beta"
-            NEXT_TAG="true"
+            NPM_TAG="beta"
           else
-            LATEST_TAG="true"
+            NPM_TAG="latest"
           fi
           
-          echo "Will publish to latest tag: $LATEST_TAG"
-          echo "Will publish to prerelease tag: $PRE_TAG"
-          echo "Will publish to next tag: $NEXT_TAG""false"
+          echo "Will publish to npm tag: $NPM_TAG"
           
           echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
-          echo "pre_tag=$PRE_TAG" >> $GITHUB_OUTPUT
-          echo "next_tag=$NEXT_TAG" >> $GITHUB_OUTPUT
+          echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
 
       - name: Install and audit dependencies
         if: steps.version_check.outputs.should_publish == 'true'
@@ -91,28 +63,12 @@ jobs:
         if: steps.version_check.outputs.should_publish == 'true'
         run: npm test
 
-      - name: Publish latest to NPM
-        if: (steps.version_check.outputs.should_publish == 'true' && steps.version_check.outputs.latest_tag == 'true')
+      - name: Publish to NPM
+        if: steps.version_check.outputs.should_publish == 'true'
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.ADOBE_BOT_NPM_TOKEN }}
-          tag: 'latest'
-          access: 'public'
-
-      - name: Publish prerelease to NPM
-        if: (steps.version_check.outputs.should_publish == 'true' && steps.version_check.outputs.pre_tag != 'false')
-        uses: JS-DevTools/npm-publish@v3
-        with:
-          token: ${{ secrets.ADOBE_BOT_NPM_TOKEN }}
-          tag: ${{ steps.version_check.outputs.pre_tag }}
-          access: 'public'
-
-      - name: Publish next tag to NPM
-        if: (steps.version_check.outputs.should_publish == 'true' && steps.version_check.outputs.next_tag == 'true')
-        uses: JS-DevTools/npm-publish@v3
-        with:
-          token: ${{ secrets.ADOBE_BOT_NPM_TOKEN }}
-          tag: 'next'
+          tag: ${{ steps.version_check.outputs.npm_tag }}
           access: 'public'
 
       - name: Create git tag
