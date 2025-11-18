@@ -74,9 +74,7 @@ jobs:
           
           echo "Will publish to latest tag: $LATEST_TAG"
           echo "Will publish to prerelease tag: $PRE_TAG"
-          echo "Will publish to next tag: $NEXT_TAG""false"
-          
-          if 
+          echo "Will publish to next tag: $NEXT_TAG"
           
           echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
