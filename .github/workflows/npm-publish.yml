@@ -42,8 +42,7 @@ jobs:
           if [ "${{ github.event.inputs.force_publish }}" == "true" ]; then
             echo "Force publish enabled"
             echo "should_publish=true" >> $GITHUB_OUTPUT
-          fi
-          if [ "$CURRENT_VERSION" != "$PUBLISHED_VERSION" ]; then
+          elif [ "$CURRENT_VERSION" != "$PUBLISHED_VERSION" ]; then
             echo "Version $CURRENT_VERSION not yet published"
             echo "should_publish=true" >> $GITHUB_OUTPUT
           else
@@ -76,6 +75,8 @@ jobs:
           echo "Will publish to latest tag: $LATEST_TAG"
           echo "Will publish to prerelease tag: $PRE_TAG"
           echo "Will publish to next tag: $NEXT_TAG""false"
+          
+          if 
           
           echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
