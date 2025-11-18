@@ -65,7 +65,7 @@ jobs:
 
       - name: Publish to NPM
         if: steps.version_check.outputs.should_publish == 'true'
-        uses: JS-DevTools/npm-publish@v3
+        uses: JS-DevTools/npm-publish@v4
         with:
           token: ${{ secrets.ADOBE_BOT_NPM_TOKEN }}
           tag: ${{ steps.version_check.outputs.npm_tag }}
