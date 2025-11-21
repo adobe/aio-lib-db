@@ -1,6 +1,6 @@
 {
   "name": "@adobe/aio-lib-db",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-beta.2",
   "description": "An abstraction on top of Document DB storage",
   "main": "index.js",
   "scripts": {
@@ -20,12 +20,12 @@
     "axios": "^1.8.4",
     "bson": "^6.10.3",
     "dotenv": "^17.0.0",
-    "http-cookie-agent": "^7.0.1",
+    "http-cookie-agent": "^6.0.8",
     "tough-cookie": "^5.1.2",
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {
-    "jest": "^30.0.0",
+    "jest": "^29.7.0",
     "uuid": "^11.1.0"
   },
   "keywords": [
@@ -49,7 +49,7 @@
     "url": "https://github.com/sponsors/adobe"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=18.0.0"
   },
   "publishConfig": {
     "access": "public"
