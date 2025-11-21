@@ -17,7 +17,8 @@ const {
   getFilePath,
   readYamlConfig,
   getRuntimeManifestFromAppConfig,
-  getRegionFromAppConfig
+  getRegionFromAppConfig,
+  writeRegionToAppConfig
 } = require('../../utils/manifestUtils')
 
 // Mock fs, path, and yaml modules
@@ -218,5 +219,115 @@ describe('manifestUtils tests', () => {
     fs.readFileSync.mockImplementation(() => { throw new Error('Permission denied') })
 
     expect(() => getRegionFromAppConfig('/test/project')).toThrow('Permission denied')
+  })
+
+  test('writeRegionToAppConfig: should warn when overwriting different region', () => {
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const configPath = '/test/project/app.config.yaml'
+    const existingConfig = {
+      application: {
+        runtimeManifest: {
+          database: {
+            region: 'us-west-2',
+            'auto-provision': true
+          }
+        }
+      }
+    }
+
+    path.join.mockReturnValue(configPath)
+    fs.existsSync.mockReturnValue(true)
+    fs.readFileSync.mockReturnValue('existing config')
+    yaml.load.mockReturnValue(existingConfig)
+    yaml.dump.mockReturnValue('updated config')
+    fs.writeFileSync.mockImplementation(() => {})
+
+    const result = writeRegionToAppConfig('/test/project', 'us-east-1')
+
+    expect(result).toBe(true)
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      "Overwriting existing database region 'us-west-2' with 'us-east-1' in app.config.yaml"
+    )
+    consoleWarnSpy.mockRestore()
+  })
+
+  test('writeRegionToAppConfig: should update app.config.yaml with provided region', () => {
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const configPath = '/test/project/app.config.yaml'
+    const existingConfig = { application: {} }
+
+    path.join.mockReturnValue(configPath)
+    fs.existsSync.mockReturnValue(true)
+    fs.readFileSync.mockReturnValue('existing config')
+    yaml.load.mockReturnValue(existingConfig)
+    yaml.dump.mockReturnValue('updated config')
+    fs.writeFileSync.mockImplementation(() => {})
+
+    const result = writeRegionToAppConfig('/test/project', 'us-east-1')
+
+    expect(result).toBe(true)
+    expect(consoleWarnSpy).not.toHaveBeenCalled()
+    consoleWarnSpy.mockRestore()
+  })
+
+  test('writeRegionToAppConfig: should return false when app.config.yaml not found', () => {
+    fs.existsSync.mockReturnValue(false)
+
+    const result = writeRegionToAppConfig('/test/project', 'us-east-1')
+
+    expect(result).toBe(false)
+  })
+
+  test('writeRegionToAppConfig: should throw error when reading app.config.yaml fails', () => {
+    const configPath = '/test/project/app.config.yaml'
+
+    path.join.mockReturnValue(configPath)
+    fs.existsSync.mockReturnValue(true)
+    fs.readFileSync.mockImplementation(() => { throw new Error('Permission denied') })
+
+    expect(() => writeRegionToAppConfig('/test/project', 'us-east-1'))
+      .toThrow('Failed to read app.config.yaml: Permission denied')
+  })
+
+  test('writeRegionToAppConfig: should throw error when writing app.config.yaml fails', () => {
+    const configPath = '/test/project/app.config.yaml'
+    const existingConfig = { application: {} }
+
+    path.join.mockReturnValue(configPath)
+    fs.existsSync.mockReturnValue(true)
+    fs.readFileSync.mockReturnValue('existing config')
+    yaml.load.mockReturnValue(existingConfig)
+    yaml.dump.mockReturnValue('updated config')
+    fs.writeFileSync.mockImplementation(() => { throw new Error('Disk full') })
+
+    expect(() => writeRegionToAppConfig('/test/project', 'us-east-1'))
+      .toThrow('Failed to write app.config.yaml: Disk full')
+  })
+
+  test('writeRegionToAppConfig: should preserve auto-provision false value', () => {
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const configPath = '/test/project/app.config.yaml'
+    const existingConfig = {
+      application: {
+        runtimeManifest: {
+          database: {
+            'auto-provision': false
+          }
+        }
+      }
+    }
+
+    path.join.mockReturnValue(configPath)
+    fs.existsSync.mockReturnValue(true)
+    fs.readFileSync.mockReturnValue('existing config')
+    yaml.load.mockReturnValue(existingConfig)
+    yaml.dump.mockReturnValue('updated config')
+    fs.writeFileSync.mockImplementation(() => {})
+
+    const result = writeRegionToAppConfig('/test/project', 'us-east-1')
+
+    expect(result).toBe(true)
+    expect(consoleWarnSpy).not.toHaveBeenCalled()
+    consoleWarnSpy.mockRestore()
   })
 })
