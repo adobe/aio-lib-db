@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [ 20, 22, 24 ] # Node versions before 20 are EoL
+        node: [ 18, 20, 22, 24 ] # Node versions before 20 are EoL, but the CLI plugin still supports v18
     steps:
       - uses: actions/checkout@v5
       - name: Set up Node.js ${{ matrix.node }}
