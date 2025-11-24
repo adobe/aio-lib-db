@@ -228,7 +228,7 @@ describe('manifestUtils tests', () => {
       application: {
         runtimeManifest: {
           database: {
-            region: 'us-west-2',
+            region: 'emea',
             'auto-provision': true
           }
         }
@@ -242,11 +242,11 @@ describe('manifestUtils tests', () => {
     yaml.dump.mockReturnValue('updated config')
     fs.writeFileSync.mockImplementation(() => {})
 
-    const result = writeRegionToAppConfig('/test/project', 'us-east-1')
+    const result = writeRegionToAppConfig('/test/project', 'amer')
 
     expect(result).toBe(true)
     expect(consoleWarnSpy).toHaveBeenCalledWith(
-      "Overwriting existing database region 'us-west-2' with 'us-east-1' in app.config.yaml"
+      "Overwriting existing database region 'emea' with 'amer' in app.config.yaml"
     )
     consoleWarnSpy.mockRestore()
   })
@@ -263,7 +263,7 @@ describe('manifestUtils tests', () => {
     yaml.dump.mockReturnValue('updated config')
     fs.writeFileSync.mockImplementation(() => {})
 
-    const result = writeRegionToAppConfig('/test/project', 'us-east-1')
+    const result = writeRegionToAppConfig('/test/project', 'amer')
 
     expect(result).toBe(true)
     expect(consoleWarnSpy).not.toHaveBeenCalled()
@@ -273,7 +273,7 @@ describe('manifestUtils tests', () => {
   test('writeRegionToAppConfig: should return false when app.config.yaml not found', () => {
     fs.existsSync.mockReturnValue(false)
 
-    const result = writeRegionToAppConfig('/test/project', 'us-east-1')
+    const result = writeRegionToAppConfig('/test/project', 'apac')
 
     expect(result).toBe(false)
   })
@@ -285,7 +285,7 @@ describe('manifestUtils tests', () => {
     fs.existsSync.mockReturnValue(true)
     fs.readFileSync.mockImplementation(() => { throw new Error('Permission denied') })
 
-    expect(() => writeRegionToAppConfig('/test/project', 'us-east-1'))
+    expect(() => writeRegionToAppConfig('/test/project', 'emea'))
       .toThrow('Failed to read app.config.yaml: Permission denied')
   })
 
@@ -300,7 +300,7 @@ describe('manifestUtils tests', () => {
     yaml.dump.mockReturnValue('updated config')
     fs.writeFileSync.mockImplementation(() => { throw new Error('Disk full') })
 
-    expect(() => writeRegionToAppConfig('/test/project', 'us-east-1'))
+    expect(() => writeRegionToAppConfig('/test/project', 'amer'))
       .toThrow('Failed to write app.config.yaml: Disk full')
   })
 
@@ -324,7 +324,7 @@ describe('manifestUtils tests', () => {
     yaml.dump.mockReturnValue('updated config')
     fs.writeFileSync.mockImplementation(() => {})
 
-    const result = writeRegionToAppConfig('/test/project', 'us-east-1')
+    const result = writeRegionToAppConfig('/test/project', 'apac')
 
     expect(result).toBe(true)
     expect(consoleWarnSpy).not.toHaveBeenCalled()
