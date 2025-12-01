@@ -98,12 +98,6 @@ function writeRegionToAppConfig(startDir, region) {
   try {
     // Read existing config
     existingConfig = readYamlConfig(appConfigPath)
-
-    // Check if region already exists and log warning for overwriting
-    const existingRegion = existingConfig?.application?.runtimeManifest?.database?.region
-    if (existingRegion && existingRegion !== region) {
-      console.warn(`Overwriting existing database region '${existingRegion}' with '${region}' in app.config.yaml`)
-    }
   } catch (error) {
     throw new Error(`Failed to read app.config.yaml: ${error.message}`)
   }
@@ -112,9 +106,9 @@ function writeRegionToAppConfig(startDir, region) {
   const currentAutoProv = existingConfig?.application?.runtimeManifest?.database?.['auto-provision']
 
   // Determine auto-provision value:
-  // - If false, keep it false
-  // - If true or not present, set to true
-  const autoProvision = currentAutoProv === false ? false : true
+  // - If true, keep it true
+  // - If false or not present, set to false
+  const autoProvision = currentAutoProv === true ? true : false
 
   // Ensure nested structure exists and add region + auto-provision inside runtimeManifest
   const config = {

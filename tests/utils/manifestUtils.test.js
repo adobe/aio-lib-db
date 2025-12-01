@@ -221,8 +221,7 @@ describe('manifestUtils tests', () => {
     expect(() => getRegionFromAppConfig('/test/project')).toThrow('Permission denied')
   })
 
-  test('writeRegionToAppConfig: should warn when overwriting different region', () => {
-    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  test('writeRegionToAppConfig: should overwrite different region', () => {
     const configPath = '/test/project/app.config.yaml'
     const existingConfig = {
       application: {
@@ -245,14 +244,9 @@ describe('manifestUtils tests', () => {
     const result = writeRegionToAppConfig('/test/project', 'amer')
 
     expect(result).toBe(true)
-    expect(consoleWarnSpy).toHaveBeenCalledWith(
-      "Overwriting existing database region 'emea' with 'amer' in app.config.yaml"
-    )
-    consoleWarnSpy.mockRestore()
   })
 
   test('writeRegionToAppConfig: should update app.config.yaml with provided region', () => {
-    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
     const configPath = '/test/project/app.config.yaml'
     const existingConfig = { application: {} }
 
@@ -266,8 +260,6 @@ describe('manifestUtils tests', () => {
     const result = writeRegionToAppConfig('/test/project', 'amer')
 
     expect(result).toBe(true)
-    expect(consoleWarnSpy).not.toHaveBeenCalled()
-    consoleWarnSpy.mockRestore()
   })
 
   test('writeRegionToAppConfig: should return false when app.config.yaml not found', () => {
@@ -305,7 +297,6 @@ describe('manifestUtils tests', () => {
   })
 
   test('writeRegionToAppConfig: should preserve auto-provision false value', () => {
-    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
     const configPath = '/test/project/app.config.yaml'
     const existingConfig = {
       application: {
@@ -327,7 +318,5 @@ describe('manifestUtils tests', () => {
     const result = writeRegionToAppConfig('/test/project', 'apac')
 
     expect(result).toBe(true)
-    expect(consoleWarnSpy).not.toHaveBeenCalled()
-    consoleWarnSpy.mockRestore()
   })
 })

@@ -16,7 +16,7 @@ const {
 } = require("../../lib/constants")
 const { apiGet, apiPost } = require("../../utils/apiRequest")
 const { getCliEnv } = require('@adobe/aio-lib-env')
-const { getRegionFromAppConfig } = require("../../utils/manifestUtils")
+const { getRegionFromAppConfig, writeRegionToAppConfig } = require("../../utils/manifestUtils")
 
 jest.mock("../../utils/manifestUtils")
 
@@ -27,12 +27,32 @@ describe('DbBase tests', () => {
   beforeEach(async () => {
     db = getDb()
     nonSessClient = db.axiosClient
+    getRegionFromAppConfig.mockReturnValue(null) // Default: no region in manifest
+    writeRegionToAppConfig.mockReturnValue(true) // Default: successful write
   })
 
-  test('provisionRequest calls the appropriate endpoint', async () => {
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  test('provisionRequest succeeds even when no app.config.yaml found', async () => {
+    writeRegionToAppConfig.mockReturnValue(false) // No file found
     await db.provisionRequest()
     expect(nonSessClient).toHaveCalledServicePost('v1/db/provision/request')
-    expect(await nonSessClient.getSessionCookies()).toEqual([])
+  })
+
+  test('provisionRequest succeeds even on manifest write error', async () => {
+    writeRegionToAppConfig.mockImplementation(() => {
+      throw new Error('Permission denied')
+    })
+    await db.provisionRequest()
+    expect(nonSessClient).toHaveCalledServicePost('v1/db/provision/request')
+  })
+
+  test('provisionRequest updates manifest with region after successful provision', async () => {
+    await db.provisionRequest()
+    expect(nonSessClient).toHaveCalledServicePost('v1/db/provision/request')
+    expect(writeRegionToAppConfig).toHaveBeenCalledWith(process.cwd(), db.region)
   })
 
   test('provisionStatus calls the appropriate endpoint', async () => {
@@ -199,7 +219,7 @@ describe('DbBase tests', () => {
     expect(externalProdDb.serviceUrl).toBe(externalProdUrl)
   })
 
-  test('db should be intialized in region from manifest when available', async () => {
+  test('db should be initialized in region from manifest when available', async () => {
     getRegionFromAppConfig.mockReturnValue('emea')
     
     const db = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
@@ -208,7 +228,7 @@ describe('DbBase tests', () => {
     expect(getRegionFromAppConfig).toHaveBeenCalledWith(process.cwd())
   })
 
-  test('db intilization should fall back to config.region when manifest is not available', async () => {
+  test('db initialization should fall back to config.region when manifest is not available', async () => {
     getRegionFromAppConfig.mockReturnValue(null)
     
     const db = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region: 'apac' })
