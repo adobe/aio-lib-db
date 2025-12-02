@@ -278,7 +278,7 @@ describe('manifestUtils tests', () => {
     fs.readFileSync.mockImplementation(() => { throw new Error('Permission denied') })
 
     expect(() => writeRegionToAppConfig('/test/project', 'emea'))
-      .toThrow('Failed to read app.config.yaml: Permission denied')
+      .toThrow('Permission denied')
   })
 
   test('writeRegionToAppConfig: should throw error when writing app.config.yaml fails', () => {
@@ -293,7 +293,7 @@ describe('manifestUtils tests', () => {
     fs.writeFileSync.mockImplementation(() => { throw new Error('Disk full') })
 
     expect(() => writeRegionToAppConfig('/test/project', 'amer'))
-      .toThrow('Failed to write app.config.yaml: Disk full')
+      .toThrow('Disk full')
   })
 
   test('writeRegionToAppConfig: should preserve auto-provision false value', () => {

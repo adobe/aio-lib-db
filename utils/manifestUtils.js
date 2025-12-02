@@ -94,13 +94,8 @@ function writeRegionToAppConfig(startDir, region) {
     return false
   }
 
-  let existingConfig
-  try {
-    // Read existing config
-    existingConfig = readYamlConfig(appConfigPath)
-  } catch (error) {
-    throw new Error(`Failed to read app.config.yaml: ${error.message}`)
-  }
+  // Read existing config
+  const existingConfig = readYamlConfig(appConfigPath)
 
   // Get current auto-provision value from runtimeManifest.database
   const currentAutoProv = existingConfig?.application?.runtimeManifest?.database?.['auto-provision']
@@ -126,18 +121,15 @@ function writeRegionToAppConfig(startDir, region) {
     }
   }
 
-  try {
-    // Write updated config back to file
-    const yamlContent = yaml.dump(config, {
-      defaultFlowStyle: false,
-      lineWidth: -1
-    })
+  // Write updated config back to file
+  const yamlContent = yaml.dump(config, {
+    defaultFlowStyle: false,
+    lineWidth: -1
+  })
 
-    fs.writeFileSync(appConfigPath, yamlContent, 'utf8')
-    return true
-  } catch (error) {
-    throw new Error(`Failed to write app.config.yaml: ${error.message}`)
-  }
+  fs.writeFileSync(appConfigPath, yamlContent, 'utf8')
+  return true
+
 }
 
 module.exports = {
