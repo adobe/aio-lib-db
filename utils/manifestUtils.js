@@ -77,9 +77,65 @@ function getRegionFromAppConfig(startDir) {
   return runtimeManifest?.database?.region || null
 }
 
+/**
+ * Write database configuration to existing app.config.yaml
+ *
+ * @param {string} startDir - Starting directory to search from
+ * @param {string} region - Database region
+ * @returns {boolean} True if region was written, false if file not found
+ * @throws {Error} If file operations fail (read/write/parse errors)
+ */
+function writeRegionToAppConfig(startDir, region) {
+  const APP_CONFIG_FILE = 'app.config.yaml'
+  const appConfigPath = getFilePath(startDir, APP_CONFIG_FILE)
+
+  // Return false if no app.config.yaml exists
+  if (!appConfigPath) {
+    return false
+  }
+
+  // Read existing config
+  const existingConfig = readYamlConfig(appConfigPath)
+
+  // Get current auto-provision value from runtimeManifest.database
+  const currentAutoProv = existingConfig?.application?.runtimeManifest?.database?.['auto-provision']
+
+  // Determine auto-provision value:
+  // - If true, keep it true
+  // - If false or not present, set to false
+  const autoProvision = currentAutoProv === true ? true : false
+
+  // Ensure nested structure exists and add region + auto-provision inside runtimeManifest
+  const config = {
+    ...existingConfig,
+    application: {
+      ...existingConfig?.application,
+      runtimeManifest: {
+        ...existingConfig?.application?.runtimeManifest,
+        database: {
+          ...existingConfig?.application?.runtimeManifest?.database,
+          'auto-provision': autoProvision,
+          region: region
+        }
+      }
+    }
+  }
+
+  // Write updated config back to file
+  const yamlContent = yaml.dump(config, {
+    defaultFlowStyle: false,
+    lineWidth: -1
+  })
+
+  fs.writeFileSync(appConfigPath, yamlContent, 'utf8')
+  return true
+
+}
+
 module.exports = {
   getFilePath,
   readYamlConfig,
   getRuntimeManifestFromAppConfig,
-  getRegionFromAppConfig
+  getRegionFromAppConfig,
+  writeRegionToAppConfig
 }

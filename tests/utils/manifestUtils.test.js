@@ -17,7 +17,8 @@ const {
   getFilePath,
   readYamlConfig,
   getRuntimeManifestFromAppConfig,
-  getRegionFromAppConfig
+  getRegionFromAppConfig,
+  writeRegionToAppConfig
 } = require('../../utils/manifestUtils')
 
 // Mock fs, path, and yaml modules
@@ -218,5 +219,104 @@ describe('manifestUtils tests', () => {
     fs.readFileSync.mockImplementation(() => { throw new Error('Permission denied') })
 
     expect(() => getRegionFromAppConfig('/test/project')).toThrow('Permission denied')
+  })
+
+  test('writeRegionToAppConfig: should overwrite different region', () => {
+    const configPath = '/test/project/app.config.yaml'
+    const existingConfig = {
+      application: {
+        runtimeManifest: {
+          database: {
+            region: 'emea',
+            'auto-provision': true
+          }
+        }
+      }
+    }
+
+    path.join.mockReturnValue(configPath)
+    fs.existsSync.mockReturnValue(true)
+    fs.readFileSync.mockReturnValue('existing config')
+    yaml.load.mockReturnValue(existingConfig)
+    yaml.dump.mockReturnValue('updated config')
+    fs.writeFileSync.mockImplementation(() => {})
+
+    const result = writeRegionToAppConfig('/test/project', 'amer')
+
+    expect(result).toBe(true)
+  })
+
+  test('writeRegionToAppConfig: should update app.config.yaml with provided region', () => {
+    const configPath = '/test/project/app.config.yaml'
+    const existingConfig = { application: {} }
+
+    path.join.mockReturnValue(configPath)
+    fs.existsSync.mockReturnValue(true)
+    fs.readFileSync.mockReturnValue('existing config')
+    yaml.load.mockReturnValue(existingConfig)
+    yaml.dump.mockReturnValue('updated config')
+    fs.writeFileSync.mockImplementation(() => {})
+
+    const result = writeRegionToAppConfig('/test/project', 'amer')
+
+    expect(result).toBe(true)
+  })
+
+  test('writeRegionToAppConfig: should return false when app.config.yaml not found', () => {
+    fs.existsSync.mockReturnValue(false)
+
+    const result = writeRegionToAppConfig('/test/project', 'apac')
+
+    expect(result).toBe(false)
+  })
+
+  test('writeRegionToAppConfig: should throw error when reading app.config.yaml fails', () => {
+    const configPath = '/test/project/app.config.yaml'
+
+    path.join.mockReturnValue(configPath)
+    fs.existsSync.mockReturnValue(true)
+    fs.readFileSync.mockImplementation(() => { throw new Error('Permission denied') })
+
+    expect(() => writeRegionToAppConfig('/test/project', 'emea'))
+      .toThrow('Permission denied')
+  })
+
+  test('writeRegionToAppConfig: should throw error when writing app.config.yaml fails', () => {
+    const configPath = '/test/project/app.config.yaml'
+    const existingConfig = { application: {} }
+
+    path.join.mockReturnValue(configPath)
+    fs.existsSync.mockReturnValue(true)
+    fs.readFileSync.mockReturnValue('existing config')
+    yaml.load.mockReturnValue(existingConfig)
+    yaml.dump.mockReturnValue('updated config')
+    fs.writeFileSync.mockImplementation(() => { throw new Error('Disk full') })
+
+    expect(() => writeRegionToAppConfig('/test/project', 'amer'))
+      .toThrow('Disk full')
+  })
+
+  test('writeRegionToAppConfig: should preserve auto-provision false value', () => {
+    const configPath = '/test/project/app.config.yaml'
+    const existingConfig = {
+      application: {
+        runtimeManifest: {
+          database: {
+            'auto-provision': false
+          }
+        }
+      }
+    }
+
+    path.join.mockReturnValue(configPath)
+    fs.existsSync.mockReturnValue(true)
+    fs.readFileSync.mockReturnValue('existing config')
+    yaml.load.mockReturnValue(existingConfig)
+    yaml.dump.mockReturnValue('updated config')
+    fs.writeFileSync.mockImplementation(() => {})
+
+    const result = writeRegionToAppConfig('/test/project', 'apac')
+
+    expect(result).toBe(true)
   })
 })
