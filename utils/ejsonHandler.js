@@ -35,6 +35,10 @@ function transformBsonPrimitives(obj) {
     })
   }
   else if (typeof obj === 'object') {
+    // If the type was recognized by the parser, any properties should also have been handled so return it as-is
+    const objName = obj?.constructor?.name
+    if (objName && objName !== 'Object') return obj
+
     const mapped = {}
     Object.keys(obj).forEach((key) => {
       mapped[key] = transformBsonPrimitives(obj[key])

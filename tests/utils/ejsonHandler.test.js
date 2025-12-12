@@ -28,7 +28,8 @@ describe('ejsonHandler tests', () => {
       + '        {'
       + '          "_id": { "$oid": "68472f05fd54a5e0dad30cbb" },' // Should result in bson ObjectId
       + '          "name": "Classic Keyboard",'
-      + '          "price": { "$numberDecimal": "39.99" }' // Should result in bson Decimal128
+      + '          "price": { "$numberDecimal": "39.99" },' // Should result in bson Decimal128
+      + '          "date": { "$date": { "$numberLong": "1625067000000" } }' // Should result in js Date('2021-06-30T15:30:00.000Z')
       + '        }'
       + '      ],'
       + '      "id": { "$numberLong": "5461853363952707584" },' // Should result in bson Long
@@ -52,7 +53,8 @@ describe('ejsonHandler tests', () => {
             {
               _id: new ObjectId("68472f05fd54a5e0dad30cbb"),
               name: "Classic Keyboard",
-              price: new Decimal128('39.99')
+              price: new Decimal128('39.99'),
+              date: new Date('2021-06-30T15:30:00.000Z')
             }
           ],
           id: Long.fromString("5461853363952707584"),
