@@ -20,7 +20,7 @@ npm install @adobe/aio-lib-db
 
 **aio-lib-db** is intended to be used by AIO Runtime Actions and the DB Plugin for the AIO CLI, and these are always executed within a specific runtime namespace. Before use, a Workspace Database must be provisioned. (See [Provisioning a Workspace Database](https://developer.adobe.com/app-builder/docs/guides/app_builder_guides/storage/database#provisioning-a-workspace-database) in the [Getting Started with Database Storage](https://developer.adobe.com/app-builder/docs/guides/app_builder_guides/storage/database) guide for details.)
 
-**aio-lib-db** must always be initialized in a specific region. This region is normally defined in the `app.config.yaml` application manifest. If it is not, it will default ot the `amer` region. Another option is to pass `{ region: '<region>' }` to the `libDb.init()` method to override the default.
+**aio-lib-db** must always be initialized in a specific region. This region is normally defined in the `app.config.yaml` application manifest. If it is not, it will default to the `amer` region. Another option is to pass `{ region: '<region>' }` to the `libDb.init()` method to override the default.
 
 ### Basic Usage
 
