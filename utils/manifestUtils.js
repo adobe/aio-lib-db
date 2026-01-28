@@ -31,8 +31,13 @@ function getFilePath(startDir, filename) {
   const files = []
   while (true) {
     const manifestPath = path.join(dir, filename)
-    const filesInDir = fs.readdirSync(manifestPath) || []
-    files.push(...filesInDir.map(fileName => path.join(manifestPath, fileName)))
+    try {
+      const filesInDir = fs.readdirSync(dir) || []
+      files.push(...filesInDir.map(fileName => path.join(dir, fileName)))
+    }
+    catch (e) {
+      files.push(`<error reading directory: ${dir}>`)
+    }
     if (fs.existsSync(manifestPath)) return { path: manifestPath, files }
     if (dir === root) break
     dir = path.dirname(dir)
