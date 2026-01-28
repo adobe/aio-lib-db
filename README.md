@@ -12,49 +12,28 @@ Install `aio-lib-db` from npm:
 npm install @adobe/aio-lib-db
 ```
 
-Or add it to your `package.json`:
-
-```json
-{
-  "dependencies": {
-    "@adobe/aio-lib-db": "^0.1.0"
-  }
-}
-```
-
 ---
 
 ## Quick Start
 
 ### Setup
 
-First, set your credentials in your `.env` file:
+**aio-lib-db** is intended to be used by AIO Runtime Actions and the DB Plugin for the AIO CLI, and these are always executed within a specific runtime namespace. Before use, a Workspace Database must be provisioned. (See [Provisioning a Workspace Database](https://developer.adobe.com/app-builder/docs/guides/app_builder_guides/storage/database#provisioning-a-workspace-database) in the [Getting Started with Database Storage](https://developer.adobe.com/app-builder/docs/guides/app_builder_guides/storage/database) guide for details.)
 
-```env
-__OW_NAMESPACE=your_namespace
-__OW_API_KEY=user:password
-```
-
-> To find runtime namespace and credentials, click "Download all" in the Adobe Developer Console for your project workspace and the values will be under `project.workspace.details.runtime.namespaces`.
+**aio-lib-db** must always be initialized in a specific region. This region is normally defined in the `app.config.yaml` application manifest. If it is not, it will default ot the `amer` region. Another option is to pass `{ region: '<region>' }` to the `libDb.init()` method to override the default.
 
 ### Basic Usage
-
-> When calling `libDb.init()`, you can pass `{ region: '<region>>' }` to specify the region where your database is provisioned, or if region is defined in `app.config.yaml` of aio app, then `libDb.init()` will initialize in specified region.
-> 
-> **Note:** region defined in `app.config.yaml` holds preference over passed in config param.
-> 
-> If region is not specified in any of the above ways, it falls back to default.
-> 
-> Valid regions are `amer` (default), `emea`, and `apac`.
 
 ```javascript
 const libDb = require('@adobe/aio-lib-db');
 
 async function main() {
+  let client;
   try {
-    // Initialize and connect
-    const db = await libDb.init({ region: 'amer' });
-    const client = await db.connect();
+    // initialize library in region is defined in app.config.yaml and defaults to amer
+    const db = await libDb.init();
+    // connect to the database
+    client = await db.connect();
 
     // Get a collection
     const users = client.collection('users');
@@ -67,8 +46,10 @@ async function main() {
     const results = await cursor.toArray();
   }
   finally {
-    // Close any open cursors when the application is done
-    await client.close();
+    if (client) {
+      // Close any open cursors when the application is done
+      await client.close();
+    }
   }
 }
 ```
