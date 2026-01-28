@@ -37,52 +37,52 @@ describe('manifestUtils tests', () => {
 
   test('getFilePath: should find config file in current directory', () => {
     const expectedPath = '/test/project/app.config.yaml'
-    
+
     path.join.mockReturnValue(expectedPath)
     fs.existsSync.mockImplementation((filePath) => filePath === expectedPath)
 
     const result = getFilePath('/test/project', 'app.config.yaml')
-    
-    expect(result).toBe(expectedPath)
+
+    expect(result).toEqual({ path: expectedPath, files: expect.anything() })
   })
 
   test('getFilePath: should traverses only one directory up', () => {
     const nestedPath = '/test/project/nested/app.config.yaml'
     const parentPath = '/test/project/app.config.yaml'
-    
+
     path.resolve.mockReturnValue('/test/project/nested')
     path.join.mockReturnValueOnce(nestedPath).mockReturnValueOnce(parentPath)
     path.dirname.mockReturnValue('/test/project')
     fs.existsSync.mockImplementation((filePath) => filePath === parentPath)
 
     const result = getFilePath('/test/project/nested', 'app.config.yaml')
-    
-    expect(result).toBe(parentPath)
+
+    expect(result).toEqual({ path: parentPath, files: expect.anything() })
   })
 
   test('getFilePath: should return null when file not found', () => {
     fs.existsSync.mockReturnValue(false)
 
     const result = getFilePath('/test/project', 'app.config.yaml')
-    
-    expect(result).toBeNull()
+
+    expect(result).toEqual({ path: null, files: expect.anything() })
   })
 
   test('getFilePath: should validate input parameters', () => {
-    expect(getFilePath(null, 'app.config.yaml')).toBeNull()
-    expect(getFilePath('/test', null)).toBeNull()
-    expect(getFilePath(123, 'app.config.yaml')).toBeNull()
+    expect(getFilePath(null, 'app.config.yaml')).toEqual({ path: null, files: expect.anything() })
+    expect(getFilePath('/test', null)).toEqual({ path: null, files: expect.anything() })
+    expect(getFilePath(123, 'app.config.yaml')).toEqual({ path: null, files: expect.anything() })
   })
 
   test('readYamlConfig: should parse valid YAML file', () => {
     const expectedConfig = { key: 'value', nested: { prop: 'test' } }
-    
+
     fs.existsSync.mockReturnValue(true)
     fs.readFileSync.mockReturnValue('key: value\nnested:\n  prop: test')
     yaml.load.mockReturnValue(expectedConfig)
 
     const result = readYamlConfig('/test/app.config.yaml')
-    
+
     expect(result).toEqual(expectedConfig)
   })
 
@@ -90,7 +90,7 @@ describe('manifestUtils tests', () => {
     fs.existsSync.mockReturnValue(false)
 
     const result = readYamlConfig('/test/nonexistent.yaml')
-    
+
     expect(result).toEqual({})
     expect(fs.readFileSync).not.toHaveBeenCalled()
   })
@@ -111,23 +111,23 @@ describe('manifestUtils tests', () => {
         }
       }
     }
-    
+
     path.join.mockReturnValue('/test/project/app.config.yaml')
     fs.existsSync.mockReturnValue(true)
     fs.readFileSync.mockReturnValue('mock-yaml')
     yaml.load.mockReturnValue(mockConfig)
 
     const result = getRuntimeManifestFromAppConfig('/test/project')
-    
-    expect(result).toEqual({ database: { region: 'apac' } })
+
+    expect(result).toEqual({ runtimeManifest: { database: { region: 'apac' } }, files: expect.anything() })
   })
 
   test('getRuntimeManifestFromAppConfig: should return null when no config found', () => {
     fs.existsSync.mockReturnValue(false)
 
     const result = getRuntimeManifestFromAppConfig('/test/project')
-    
-    expect(result).toBeNull()
+
+    expect(result).toEqual({ runtimeManifest: null, files: expect.anything() })
   })
 
   test('getRuntimeManifestFromAppConfig: should return null when no runtimeManifest in config', () => {
@@ -137,8 +137,8 @@ describe('manifestUtils tests', () => {
     yaml.load.mockReturnValue({ someOtherConfig: 'value' })
 
     const result = getRuntimeManifestFromAppConfig('/test/project')
-    
-    expect(result).toBeNull()
+
+    expect(result).toEqual({ runtimeManifest: null, files: expect.anything() })
   })
 
   test('getRegionFromAppConfig: should extract region from database config', () => {
@@ -149,23 +149,23 @@ describe('manifestUtils tests', () => {
         }
       }
     }
-    
+
     path.join.mockReturnValue('/test/project/app.config.yaml')
     fs.existsSync.mockReturnValue(true)
     fs.readFileSync.mockReturnValue('mock-yaml')
     yaml.load.mockReturnValue(mockConfig)
 
     const result = getRegionFromAppConfig('/test/project')
-    
-    expect(result).toBe('emea')
+
+    expect(result).toEqual({ region: 'emea', files: expect.anything() })
   })
 
   test('getRegionFromAppConfig: should return null when no config found', () => {
     fs.existsSync.mockReturnValue(false)
 
     const result = getRegionFromAppConfig('/test/project')
-    
-    expect(result).toBeNull()
+
+    expect(result).toEqual({ region: null, files: expect.anything() })
   })
 
   test('getRegionFromAppConfig: should return null when no database config', () => {
@@ -174,15 +174,15 @@ describe('manifestUtils tests', () => {
         runtimeManifest: { someOtherConfig: 'value' }
       }
     }
-    
+
     path.join.mockReturnValue('/test/project/app.config.yaml')
     fs.existsSync.mockReturnValue(true)
     fs.readFileSync.mockReturnValue('mock-yaml')
     yaml.load.mockReturnValue(mockConfig)
 
     const result = getRegionFromAppConfig('/test/project')
-    
-    expect(result).toBeNull()
+
+    expect(result).toEqual({ region: null, files: expect.anything() })
   })
 
   test('getRegionFromAppConfig: should return null when no region specified', () => {
@@ -193,15 +193,15 @@ describe('manifestUtils tests', () => {
         }
       }
     }
-    
+
     path.join.mockReturnValue('/test/project/app.config.yaml')
     fs.existsSync.mockReturnValue(true)
     fs.readFileSync.mockReturnValue('mock-yaml')
     yaml.load.mockReturnValue(mockConfig)
 
     const result = getRegionFromAppConfig('/test/project')
-    
-    expect(result).toBeNull()
+
+    expect(result).toEqual({ region: null, files: expect.anything() })
   })
 
   test('getRegionFromAppConfig: should propagate YAML parsing errors', () => {

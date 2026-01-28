@@ -20,21 +20,24 @@ const yaml = require('js-yaml')
  *
  * @param {string} startDir - Starting directory for search
  * @param {string} filename - Filename to search for
- * @returns {string|null} Absolute path to file or null if not found
+ * @returns {{ path: string|null, files: string[]}} Absolute path to file or null if not found
  */
 function getFilePath(startDir, filename) {
-  if (!startDir || typeof startDir !== 'string') return null
-  if (!filename || typeof filename !== 'string') return null
-  
+  if (!startDir || typeof startDir !== 'string') return { path: null, files: [] }
+  if (!filename || typeof filename !== 'string') return { path: null, files: [] }
+
   let dir = path.resolve(startDir)
   const root = path.parse(dir).root
+  const files = []
   while (true) {
     const manifestPath = path.join(dir, filename)
-    if (fs.existsSync(manifestPath)) return manifestPath
+    const filesInDir = fs.readdirSync(manifestPath) || []
+    files.push(...filesInDir.map(fileName => path.join(manifestPath, fileName)))
+    if (fs.existsSync(manifestPath)) return { path: manifestPath, files }
     if (dir === root) break
     dir = path.dirname(dir)
   }
-  return null
+  return { path: null, files }
 }
 
 /**
@@ -54,27 +57,27 @@ function readYamlConfig(filePath) {
  * or null if not found.
  *
  * @param {string} startDir - Starting directory to search from
- * @returns {Object|null} Runtime manifest object or null if not found
+ * @returns {{ runtimeManifest: Object|null, files: string[]}} Runtime manifest object or null if not found
  */
 function getRuntimeManifestFromAppConfig(startDir) {
   const APP_CONFIG_FILE = 'app.config.yaml'
-  const appConfigPath = getFilePath(startDir, APP_CONFIG_FILE)
-  if (!appConfigPath) return null
+  const { path: appConfigPath, files } = getFilePath(startDir, APP_CONFIG_FILE)
+  if (!appConfigPath) return { runtimeManifest: null, files }
   const parsed = readYamlConfig(appConfigPath)
-  
+
   // Return runtimeManifest from application.runtimeManifest
-  return parsed?.application?.runtimeManifest || null
+  return { runtimeManifest: parsed?.application?.runtimeManifest || null, files }
 }
 
 /**
  * Extract region from app config manifest
  *
  * @param {string} startDir - Starting directory to search from
- * @returns {string|null} Region string or null if not found
+ * @returns {{ region: string|null, files: string[]}} Region string or null if not found
  */
 function getRegionFromAppConfig(startDir) {
-  const runtimeManifest = getRuntimeManifestFromAppConfig(startDir)
-  return runtimeManifest?.database?.region || null
+  const { runtimeManifest, files } = getRuntimeManifestFromAppConfig(startDir)
+  return { region: runtimeManifest?.database?.region || null, files }
 }
 
 /**
@@ -87,7 +90,7 @@ function getRegionFromAppConfig(startDir) {
  */
 function writeRegionToAppConfig(startDir, region) {
   const APP_CONFIG_FILE = 'app.config.yaml'
-  const appConfigPath = getFilePath(startDir, APP_CONFIG_FILE)
+  const { path: appConfigPath } = getFilePath(startDir, APP_CONFIG_FILE)
 
   // Return false if no app.config.yaml exists
   if (!appConfigPath) {

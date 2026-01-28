@@ -27,7 +27,7 @@ describe('DbBase tests', () => {
   beforeEach(async () => {
     db = getDb()
     nonSessClient = db.axiosClient
-    getRegionFromAppConfig.mockReturnValue(null) // Default: no region in manifest
+    getRegionFromAppConfig.mockReturnValue({ region: null, files: [] }) // Default: no region in manifest
     writeRegionToAppConfig.mockReturnValue(true) // Default: successful write
   })
 
@@ -220,19 +220,19 @@ describe('DbBase tests', () => {
   })
 
   test('db should be initialized in region from manifest when available', async () => {
-    getRegionFromAppConfig.mockReturnValue('emea')
-    
+    getRegionFromAppConfig.mockReturnValue({ region: 'emea', files: [] })
+
     const db = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
-    
+
     expect(db.region).toBe('emea')
     expect(getRegionFromAppConfig).toHaveBeenCalledWith(process.cwd())
   })
 
   test('db initialization should fall back to config.region when manifest is not available', async () => {
-    getRegionFromAppConfig.mockReturnValue(null)
-    
+    getRegionFromAppConfig.mockReturnValue({ region: null, files: [] })
+
     const db = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region: 'apac' })
-    
+
     expect(db.region).toBe('apac')
   })
 
@@ -240,16 +240,16 @@ describe('DbBase tests', () => {
     getRegionFromAppConfig.mockImplementation(() => {
       throw new Error('YAML parsing error')
     })
-    
+
     await expect(DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region: 'amer' }))
       .rejects.toThrow('Error reading region from app config: YAML parsing error')
   })
 
   test('db initialization should use default region when no manifest or config region available', async () => {
-    getRegionFromAppConfig.mockReturnValue(null)
-    
+    getRegionFromAppConfig.mockReturnValue({ region: null, files: [] })
+
     const db = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
-    
+
     expect(db.region).toBe(ALLOWED_REGIONS[getCliEnv()].at(0))
   })
 })
