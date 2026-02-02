@@ -20,7 +20,7 @@ npm install @adobe/aio-lib-db
 
 **aio-lib-db** is intended to be used by AIO Runtime Actions and the DB Plugin for the AIO CLI, and these are always executed within a specific runtime namespace. Before use, a Workspace Database must be provisioned. (See [Provisioning a Workspace Database](https://developer.adobe.com/app-builder/docs/guides/app_builder_guides/storage/database#provisioning-a-workspace-database) in the [Getting Started with Database Storage](https://developer.adobe.com/app-builder/docs/guides/app_builder_guides/storage/database) guide for details.)
 
-**aio-lib-db** must always be initialized in a specific region. This region is normally defined in the `app.config.yaml` application manifest. If it is not, it will default to the `amer` region. Another option is to pass `{ region: '<region>' }` to the `libDb.init()` method to override the default.
+**aio-lib-db** must be initialized in the region the workspace database was provisioned. Otherwise, the connection will fail.  To explicitly initialize the library in a specific region, pass the `{region: "<region>"}` argument to the `libDb.init()` method. Called with no arguments, `libDb.init()` will initialize the library either in the default `amer` region or in the region defined in the `AIO_DB_REGION` environment variable.
 
 ### Basic Usage
 
@@ -30,8 +30,12 @@ const libDb = require('@adobe/aio-lib-db');
 async function main() {
   let client;
   try {
-    // initialize library in region is defined in app.config.yaml and defaults to amer
+    // initialize library with the default amer region or what is defined in AIO_DB_REGION
     const db = await libDb.init();
+
+    // initialize library with an explicit region
+    // const db = await libDb.init({region: "emea"});
+
     // connect to the database
     client = await db.connect();
 
