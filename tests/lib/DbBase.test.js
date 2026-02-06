@@ -191,22 +191,45 @@ describe('DbBase tests', () => {
 
   test('uses correct endpoints based on execution context', async () => {
     const region = 'amer'
+    const stageUrl = STAGE_ENDPOINT.replaceAll(/<region>/gi, region)
+    const runtimeProdUrl = PROD_ENDPOINT_RUNTIME.replaceAll(/<region>/gi, region)
+    const externalProdUrl = PROD_ENDPOINT_EXTERNAL.replaceAll(/<region>/gi, region)
 
     // Test with __OW_ACTIVATION_ID set (runtime context)
     process.env.__OW_ACTIVATION_ID = 'some-activation-id'
+    // Simulate normal runtime (not "aio app dev")
+    delete process.env.AIO_DEV
 
     process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
-    const stageUrl = STAGE_ENDPOINT.replaceAll(/<region>/gi, region)
     const runtimeStageDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
     expect(runtimeStageDb.serviceUrl).toBe(stageUrl)
 
     process.env.AIO_DB_ENVIRONMENT = PROD_ENV
-    const runtimeProdUrl = PROD_ENDPOINT_RUNTIME.replaceAll(/<region>/gi, region)
     const runtimeProdDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
     expect(runtimeProdDb.serviceUrl).toBe(runtimeProdUrl)
 
-    // Test without __OW_ACTIVATION_ID (default/external context)
+    delete process.env.AIO_DB_ENVIRONMENT
+    const runtimeDefaultDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(runtimeDefaultDb.serviceUrl).toBe(runtimeProdUrl)
+
+    // Simulate "aio app dev" by setting AIO_DEV
+    process.env.AIO_DEV = 'true'
+
+    process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
+    const runtimeStageDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(runtimeStageDevDb.serviceUrl).toBe(stageUrl)
+
+    process.env.AIO_DB_ENVIRONMENT = PROD_ENV
+    const runtimeProdDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(runtimeProdDevDb.serviceUrl).toBe(externalProdUrl)
+
+    delete process.env.AIO_DB_ENVIRONMENT
+    const runtimeDefaultDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(runtimeDefaultDevDb.serviceUrl).toBe(externalProdUrl)
+
+    // Test without __OW_ACTIVATION_ID (non-runtime context)
     delete process.env.__OW_ACTIVATION_ID
+    delete process.env.AIO_DEV
 
     process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
     // Stage endpoint is the same for both contexts
@@ -214,25 +237,43 @@ describe('DbBase tests', () => {
     expect(externalStageDb.serviceUrl).toBe(stageUrl)
 
     process.env.AIO_DB_ENVIRONMENT = PROD_ENV
-    const externalProdUrl = PROD_ENDPOINT_EXTERNAL.replaceAll(/<region>/gi, region)
     const externalProdDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
     expect(externalProdDb.serviceUrl).toBe(externalProdUrl)
+
+    delete process.env.AIO_DB_ENVIRONMENT
+    const externalDefaultDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(externalDefaultDb.serviceUrl).toBe(externalProdUrl)
+
+    // Make sure external behavior doesn't change if AIO_DEV is set
+    process.env.AIO_DEV = 'true'
+
+    process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
+    const externalStageDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(externalStageDevDb.serviceUrl).toBe(stageUrl)
+
+    process.env.AIO_DB_ENVIRONMENT = PROD_ENV
+    const externalProdDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(externalProdDevDb.serviceUrl).toBe(externalProdUrl)
+
+    delete process.env.AIO_DB_ENVIRONMENT
+    const externalDefaultDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    expect(externalDefaultDevDb.serviceUrl).toBe(externalProdUrl)
   })
 
   test('db should be initialized in region from manifest when available', async () => {
     getRegionFromAppConfig.mockReturnValue('emea')
-    
+
     const db = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
-    
+
     expect(db.region).toBe('emea')
     expect(getRegionFromAppConfig).toHaveBeenCalledWith(process.cwd())
   })
 
   test('db initialization should fall back to config.region when manifest is not available', async () => {
     getRegionFromAppConfig.mockReturnValue(null)
-    
+
     const db = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region: 'apac' })
-    
+
     expect(db.region).toBe('apac')
   })
 
@@ -240,16 +281,16 @@ describe('DbBase tests', () => {
     getRegionFromAppConfig.mockImplementation(() => {
       throw new Error('YAML parsing error')
     })
-    
+
     await expect(DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region: 'amer' }))
       .rejects.toThrow('Error reading region from app config: YAML parsing error')
   })
 
   test('db initialization should use default region when no manifest or config region available', async () => {
     getRegionFromAppConfig.mockReturnValue(null)
-    
+
     const db = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
-    
+
     expect(db.region).toBe(ALLOWED_REGIONS[getCliEnv()].at(0))
   })
 })
