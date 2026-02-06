@@ -11,7 +11,10 @@ governing permissions and limitations under the License.
 */
 const { getDb } = require("../testingUtils")
 const { AxiosError } = jest.requireActual("axios")
-const { apiGet } = require("../../utils/apiRequest")
+const { apiGet, apiPost } = require("../../utils/apiRequest")
+const { getAccessToken } = require("../../utils/auth-helper")
+const DbError = require("../../lib/DbError")
+const { EJSON } = require("bson")
 
 describe('API Request Tests', () => {
   let db
@@ -19,6 +22,58 @@ describe('API Request Tests', () => {
   beforeEach(async () => {
     db = getDb()
     jest.clearAllMocks()
+  })
+
+  test('apiGet retrieves access token and makes request', async () => {
+    db.axiosClient.get.mockResolvedValue({
+      data: { success: true, data: { result: 'ok' } }
+    })
+
+    const result = await apiGet(db, db.axiosClient, 'db/ping')
+
+    expect(getAccessToken).toHaveBeenCalledWith({ useCachedToken: false })
+    expect(db.axiosClient.get).toHaveBeenCalled()
+    expect(result).toEqual({ result: 'ok' })
+  })
+
+  test('apiPost retrieves access token and makes request', async () => {
+    db.axiosClient.post.mockResolvedValue({
+      data: { success: true, data: { inserted: 1 } }
+    })
+
+    const result = await apiPost(db, db.axiosClient, 'collection/test/insertOne', { doc: { a: 1 } })
+
+    expect(getAccessToken).toHaveBeenCalledWith({ useCachedToken: false })
+    expect(db.axiosClient.post).toHaveBeenCalled()
+    expect(result).toEqual({ inserted: 1 })
+  })
+
+  test('apiPost includes options in body when provided', async () => {
+    db.axiosClient.post.mockResolvedValue({
+      data: { success: true, data: { inserted: 1 } }
+    })
+
+    const params = { doc: { a: 1 } }
+    const options = { upsert: true }
+    await apiPost(db, db.axiosClient, 'collection/test/insertOne', params, options)
+
+    // Verify that options were merged into the body
+    const callArgs = db.axiosClient.post.mock.calls[0]
+    const bodyString = callArgs[1]
+    const body = EJSON.parse(bodyString)
+    expect(body.options).toEqual({ upsert: true })
+    expect(body.doc).toEqual({ a: 1 })
+  })
+
+  test('apiRequest uses cached token when db.useCachedToken is true', async () => {
+    db.useCachedToken = true
+    db.axiosClient.get.mockResolvedValue({
+      data: { success: true, data: {} }
+    })
+
+    await apiGet(db, db.axiosClient, 'db/ping')
+
+    expect(getAccessToken).toHaveBeenCalledWith({ useCachedToken: true })
   })
 
   test('apiRequest attaches http code when error occurs', async () => {
@@ -45,5 +100,24 @@ describe('API Request Tests', () => {
     await expect(async () => {
       await apiGet(db, db.axiosClient, 'db/ping')
     }).toThrowErrorWithProperties({ httpStatusCode: 200 }, 'DbError')
+  })
+
+  test('apiRequest throws DbError when authentication fails', async () => {
+    getAccessToken.mockRejectedValue(new DbError('Authentication failed'))
+
+    await expect(async () => {
+      await apiGet(db, db.axiosClient, 'db/ping')
+    }).toThrowErrorWithProperties({ message: 'Authentication failed' }, 'DbError')
+
+    expect(db.axiosClient.get).not.toHaveBeenCalled()
+  })
+
+  test('apiRequest re-throws non-axios errors', async () => {
+    const customError = new Error('Network failure')
+    db.axiosClient.get.mockRejectedValue(customError)
+
+    await expect(async () => {
+      await apiGet(db, db.axiosClient, 'db/ping')
+    }).rejects.toThrow(customError)
   })
 })

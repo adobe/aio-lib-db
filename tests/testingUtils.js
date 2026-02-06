@@ -9,7 +9,7 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-const { RUNTIME_HEADER, PROD_ENV } = require("../lib/constants")
+const { RUNTIME_HEADER, IMS_AUTHORIZATION_HEADER, IMS_AUTHORIZATION_HEADER_PREFIX, PROD_ENV } = require("../lib/constants")
 const DbBase = require("../lib/DbBase")
 const { default: axios, TEST_REGION, TEST_SERVICE_URL } = require('axios')
 const { HttpCookieAgent, HttpsCookieAgent } = require("http-cookie-agent/http")
@@ -17,19 +17,17 @@ const { EJSON } = require("bson")
 jest.mock('@adobe/aio-lib-env', () => ({
   getCliEnv: jest.fn()
 }))
+jest.mock('../utils/auth-helper')
 const { getCliEnv } = require('@adobe/aio-lib-env')
+const { getAccessToken } = require('../utils/auth-helper')
 
-const TEST_USER = 'testUser'
-const TEST_PASS = 'testPass'
-
-const TEST_AUTH = `${TEST_USER}:${TEST_PASS}`
 const TEST_NAMESPACE = `testNamespace`
+const TEST_ACCESS_TOKEN = 'iamatesttoken'
 
 const TEST_REQ_CONFIG = {
-  headers: { [RUNTIME_HEADER]: TEST_NAMESPACE },
-  auth: {
-    username: TEST_USER,
-    password: TEST_PASS
+  headers: {
+    [RUNTIME_HEADER]: TEST_NAMESPACE,
+    [IMS_AUTHORIZATION_HEADER]: IMS_AUTHORIZATION_HEADER_PREFIX + TEST_ACCESS_TOKEN
   }
 }
 
@@ -41,10 +39,12 @@ beforeEach(() => {
   getCliEnv.mockReturnValue(PROD_ENV)
   delete process.env.__OW_ACTIVATION_ID // Ensure running in the default context
   delete process.env.AIO_DB_ENDPOINT // Ensure no endpoint override
+  // Mock IMS authentication
+  getAccessToken.mockResolvedValue({ accessToken: TEST_ACCESS_TOKEN })
 })
 
 function getDb() {
-  const db = new DbBase(TEST_REGION, TEST_NAMESPACE, TEST_AUTH)
+  const db = new DbBase(TEST_REGION, TEST_NAMESPACE)
   // Ensure that an axios client has been created without session cookie tracking
   expect(axios.create).toHaveBeenCalledWith()
   expect(db.axiosClient.cookieJar).toBeUndefined()
@@ -225,6 +225,6 @@ expect.extend({ toEqualEjson, toHaveCalledServicePost, toHaveCalledServiceGet, t
 module.exports = {
   getDb,
   TEST_NAMESPACE,
-  TEST_AUTH,
+  TEST_ACCESS_TOKEN,
   getAxiosFromCursor
 }

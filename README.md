@@ -37,6 +37,17 @@ __OW_API_KEY=user:password
 
 > To find runtime namespace and credentials, click "Download all" in the Adobe Developer Console for your project workspace and the values will be under `project.workspace.details.runtime.namespaces`.
 
+**Authentication:** The library authenticates via IMS access token via `@adobe/aio-lib-ims` using the current IMS context (non-`cli` if set, otherwise `cli`).
+You must have one of the following:
+  **CLI context (`cli`)**: run `aio login` so the `ims.contexts.cli` entry exists with `access_token`/`refresh_token`.
+  **OAuth Server-to-Server context**: a named IMS context with:
+  - `client_id`
+  - `client_secrets`
+  - `technical_account_email`
+  - `technical_account_id`
+  - `scopes`
+  - `ims_org_id`
+
 ### Basic Usage
 
 > When calling `libDb.init()`, you can pass `{ region: '<region>>' }` to specify the region where your database is provisioned, or if region is defined in `app.config.yaml` of aio app, then `libDb.init()` will initialize in specified region.
