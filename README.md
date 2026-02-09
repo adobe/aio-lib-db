@@ -22,17 +22,19 @@ npm install @adobe/aio-lib-db
 
 **aio-lib-db** must be initialized in the region the workspace database was provisioned. Otherwise, the connection will fail.  To explicitly initialize the library in a specific region, pass the `{region: "<region>"}` argument to the `libDb.init()` method. Called with no arguments, `libDb.init()` will initialize the library either in the default `amer` region or in the region defined in the `AIO_DB_REGION` environment variable.
 
-### Authentication:
-The library retrieves access token for authentication via `@adobe/aio-lib-ims` using the current CLI context (non-`cli` if set, otherwise `cli`).
-You must have one of the following:
-**CLI context (`cli`)**: run `aio login` so the `ims.contexts.cli` is set
-**OAuth Server-to-Server context**: a named IMS context with:
+### Authentication
+
+**aio-lib-db** uses IMS token for authentication via `@adobe/aio-lib-ims` using the current CLI context (non-`cli` if set, otherwise `cli`).
+**CLI context (`cli`)**: run `aio login` that sets the `ims.contexts.cli` or a
+**OAuth Server-to-Server**: a named IMS context with:
 - `client_id`
 - `client_secrets`
 - `technical_account_email`
 - `technical_account_id`
 - `scopes`
 - `ims_org_id`
+
+> **Note:** Make sure to add the `App Builder Data Services` API to the selected Adobe Developer Console project; this adds the required database scopes to the workspace.
 
 ### Basic Usage
 
@@ -47,6 +49,9 @@ async function main() {
 
     // initialize library with an explicit region
     // const db = await libDb.init({region: "emea"});
+
+    // Optional: uses cached IMS token without refresh (default: `false`)
+    // const db = await libDb.init({ useCachedToken: true });
 
     // connect to the database
     client = await db.connect();
