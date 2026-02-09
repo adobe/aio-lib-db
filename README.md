@@ -22,16 +22,17 @@ npm install @adobe/aio-lib-db
 
 **aio-lib-db** must be initialized in the region the workspace database was provisioned. Otherwise, the connection will fail.  To explicitly initialize the library in a specific region, pass the `{region: "<region>"}` argument to the `libDb.init()` method. Called with no arguments, `libDb.init()` will initialize the library either in the default `amer` region or in the region defined in the `AIO_DB_REGION` environment variable.
 
-**Authentication:** The library retrieves access token for authentication via `@adobe/aio-lib-ims` using the current CLI context (non-`cli` if set, otherwise `cli`).
+### Authentication:
+The library retrieves access token for authentication via `@adobe/aio-lib-ims` using the current CLI context (non-`cli` if set, otherwise `cli`).
 You must have one of the following:
-  **CLI context (`cli`)**: run `aio login` so the `ims.contexts.cli` is set
-  **OAuth Server-to-Server context**: a named IMS context with:
-  - `client_id`
-  - `client_secrets`
-  - `technical_account_email`
-  - `technical_account_id`
-  - `scopes`
-  - `ims_org_id`
+**CLI context (`cli`)**: run `aio login` so the `ims.contexts.cli` is set
+**OAuth Server-to-Server context**: a named IMS context with:
+- `client_id`
+- `client_secrets`
+- `technical_account_email`
+- `technical_account_id`
+- `scopes`
+- `ims_org_id`
 
 ### Basic Usage
 
