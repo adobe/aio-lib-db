@@ -17,9 +17,9 @@ const { EJSON } = require("bson")
 jest.mock('@adobe/aio-lib-env', () => ({
   getCliEnv: jest.fn()
 }))
-jest.mock('../utils/auth-helper')
+jest.mock('../utils/authHelper')
 const { getCliEnv } = require('@adobe/aio-lib-env')
-const { getAccessToken } = require('../utils/auth-helper')
+const { getAccessToken } = require('../utils/authHelper')
 
 const TEST_NAMESPACE = `testNamespace`
 const TEST_ACCESS_TOKEN = 'iamatesttoken'

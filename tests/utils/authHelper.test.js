@@ -10,7 +10,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { getAccessToken } = require('../../utils/auth-helper')
+const { getAccessToken } = require('../../utils/authHelper')
 const { CLI_CONTEXT_NAME } = require('../../lib/constants')
 const DbError = require('../../lib/DbError')
 
@@ -29,7 +29,7 @@ jest.mock('@adobe/aio-lib-core-logging', () => {
 const { Ims, getToken, context } = require('@adobe/aio-lib-ims')
 const { getCliEnv } = require('@adobe/aio-lib-env')
 
-describe('auth-helper', () => {
+describe('authHelper', () => {
   const mockAccessToken = 'mock-access-token-12345'
   const mockContextName = CLI_CONTEXT_NAME
   const mockEnv = 'prod'

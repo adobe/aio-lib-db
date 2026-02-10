@@ -70,15 +70,15 @@ async function getAccessToken ({ useCachedToken = false } = {}) {
   }
 
   // Validate token
-    try {
-      const ims = new Ims(env)
-      const imsValidation = await ims.validateToken(accessToken)
-      if (!imsValidation.valid) {
-        throw new DbError('Invalid IMS access token')
-      }
-    } catch (err) {
-      throw new DbError('Failed to validate IMS access token', null, null, { cause: err })
+  try {
+    const ims = new Ims(env)
+    const imsValidation = await ims.validateToken(accessToken)
+    if (!imsValidation.valid) {
+      throw new DbError('Invalid IMS access token')
     }
+  } catch (err) {
+    throw new DbError('Failed to validate IMS access token', null, null, { cause: err })
+  }
 
   return { accessToken }
 }
