@@ -57,7 +57,6 @@ async function main() {
   }
 }
 ```
-
 ---
 
 ## Collection Operations
@@ -275,6 +274,24 @@ const cursor = collection.aggregate()
 ---
 
 ## Advanced Features
+
+### Storage Statics
+
+```javascript
+// Get storage statistics for the database
+const dbStats = client.dbStats()
+```
+| field returned | description                                   |
+|----------------|-----------------------------------------------|
+| collections    | the number of collections                     |
+| objects        | the number of objects/documents               |
+| views          | the number of views (not currently supported) |
+| indexes        | the number of indexes                         |
+| dataSize       | the actual amount of storage used in bytes    |
+| storageSize    | space allocated for storage in bytes          |
+| indexSize      | space allocated for indexes in bytes          |
+| ok             | whether the request was successful            |
+| lastUpdated    | when the statistics where last updated        |
 
 ### Indexing
 
