@@ -22,6 +22,60 @@ npm install @adobe/aio-lib-db
 
 **aio-lib-db** must be initialized in the region the workspace database was provisioned. Otherwise, the connection will fail.  To explicitly initialize the library in a specific region, pass the `{region: "<region>"}` argument to the `libDb.init()` method. Called with no arguments, `libDb.init()` will initialize the library either in the default `amer` region or in the region defined in the `AIO_DB_REGION` environment variable.
 
+### Authentication
+
+**aio-lib-db** relies on the [`@adobe/aio-lib-ims`](https://github.com/adobe/aio-lib-ims) to fetch an IMS token based on the current context (non-`cli` if set, otherwise `cli`).
+
+#### Running on a Desktop
+
+When running on your local machine, **aio-lib-db** leverages the IMS context stored in `.aio` and `.env` files.
+
+**For CLI context authentication:**
+
+```bash
+aio login
+```
+
+This populates the `ims.contexts.cli` configuration.
+
+**For OAuth Server-to-Server with a named context:**
+
+Configure the named context in your `.aio` configuration file (typically `~/.aio`) or .env and set it to current context:
+
+```json
+{
+  "ims": {
+    "contexts": {
+      "my_context": {
+        "client_id": "your-client-id",
+        "client_secrets": ["your-client-secret"],
+        "technical_account_email": "your-technical-account@techacct.adobe.com",
+        "technical_account_id": "your-technical-account-id@techacct.adobe.com",
+        "ims_org_id": "your-ims-org-id@AdobeOrg",
+        "scopes": [
+          "read",
+          "write"
+        ]
+      },
+      "current": "my_context"
+    }
+  }
+}
+```
+
+or set the current context to use the named context using aio:
+
+```bash
+aio config set ims.contexts.current my_context
+```
+
+#### Running in an Adobe I/O Runtime Action
+
+For Runtime actions, **aio-lib-db** relies on the underlying [`@adobe/aio-lib-ims`](https://github.com/adobe/aio-lib-ims) behavior, which automatically retrieves tokens from Adobe I/O Cloud State in Runtime environment.
+
+> [!IMPORTANT]
+> Make sure to add the `App Builder Data Services` API to the selected Adobe Developer Console project to adds the required database scopes to the workspace.
+
 ### Basic Usage
 
 ```javascript
@@ -35,6 +89,9 @@ async function main() {
 
     // initialize library with an explicit region
     // const db = await libDb.init({region: "emea"});
+
+    // Optional: uses cached IMS token without refresh (default: `false`)
+    // const db = await libDb.init({ useCachedToken: true });
 
     // connect to the database
     client = await db.connect();
