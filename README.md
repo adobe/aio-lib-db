@@ -374,12 +374,10 @@ const cursor = collection.find({ status: 'active' })
 ## Error Handling
 
 ```javascript
-const { DbError } = require('@adobe/aio-lib-db');
-
 try {
   await collection.insertOne({ email: 'invalid-email' });
 } catch (error) {
-  if (error instanceof DbError) {
+  if (error.name == 'DbError') {
     console.error('Database error:', error.message);
   } else {
     console.error('Unexpected error:', error);
