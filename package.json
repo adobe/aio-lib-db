@@ -19,7 +19,7 @@
     "@adobe/aio-lib-core-logging": "^3.0.2",
     "@adobe/aio-lib-env": "^3.0.1",
     "axios": "^1.8.4",
-    "bson": "^6.10.3",
+    "bson": "^7.0.0",
     "dotenv": "^17.0.0",
     "http-cookie-agent": "^6.0.8",
     "js-yaml": "^4.1.0",
