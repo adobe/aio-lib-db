@@ -92,16 +92,20 @@ const LAST_CURSOR_RESPONSE = buildResponseTemplate({
 // Associate results with corresponding endpoints
 const GET_ENDPOINT_RESULTS = [
   {
-    route: RegExp(`^v1/client/dbStats$`),
-    result: OBJECT_RESPONSE
-  },
-  {
     route: RegExp(`^v1/db/ping$`),
     result: STRING_RESPONSE
   }
 ]
 
 const POST_ENDPOINT_RESULTS = [
+  {
+    route: RegExp(`^v1/client/dbStats$`),
+    result: OBJECT_RESPONSE
+  },
+  {
+    route: RegExp(`^v1/client/orgStats$`),
+    result: OBJECT_RESPONSE
+  },
   {
     route: RegExp(`^v1/collection/[^/]+/getIndexes$`),
     result: ARRAY_RESPONSE

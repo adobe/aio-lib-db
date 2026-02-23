@@ -33,7 +33,18 @@ describe('DbClient tests', () => {
 
   test('dbStats calls the appropriate endpoint', async () => {
     await client.dbStats()
-    expect(nonSessClient).toHaveCalledServiceGet('v1/client/dbStats')
+    expect(nonSessClient).toHaveCalledServicePost('v1/client/dbStats')
+
+    await client.dbStats({ scale: 1024 })
+    expect(nonSessClient).toHaveCalledServicePost('v1/client/dbStats', { options: { scale: 1024 } })
+  })
+
+  test('orgStats calls the appropriate endpoint', async () => {
+    await client.orgStats()
+    expect(nonSessClient).toHaveCalledServicePost('v1/client/orgStats')
+
+    await client.orgStats({ scale: 1024 })
+    expect(nonSessClient).toHaveCalledServicePost('v1/client/orgStats', { options: { scale: 1024 } })
   })
 
   test('close calls the appropriate endpoint for all registered cursors and deregisters them', async () => {
