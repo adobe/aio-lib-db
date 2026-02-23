@@ -22,78 +22,31 @@ npm install @adobe/aio-lib-db
 
 **aio-lib-db** must be initialized in the region the workspace database was provisioned. Otherwise, the connection will fail.  To explicitly initialize the library in a specific region, pass the `{region: "<region>"}` argument to the `libDb.init()` method. Called with no arguments, `libDb.init()` will initialize the library either in the default `amer` region or in the region defined in the `AIO_DB_REGION` environment variable.
 
-### Authentication
-
-**aio-lib-db** relies on the [`@adobe/aio-lib-ims`](https://github.com/adobe/aio-lib-ims) to fetch an IMS token based on the current context (non-`cli` if set, otherwise `cli`).
-
-#### Running on a Desktop
-
-When running on your local machine, **aio-lib-db** leverages the IMS context stored in `.aio` and `.env` files.
-
-**For CLI context authentication:**
-
-```bash
-aio login
-```
-
-This populates the `ims.contexts.cli` configuration.
-
-**For OAuth Server-to-Server with a named context:**
-
-Configure the named context in your `.aio` configuration file (typically `~/.aio`) or .env and set it to current context:
-
-```json
-{
-  "ims": {
-    "contexts": {
-      "my_context": {
-        "client_id": "your-client-id",
-        "client_secrets": ["your-client-secret"],
-        "technical_account_email": "your-technical-account@techacct.adobe.com",
-        "technical_account_id": "your-technical-account-id@techacct.adobe.com",
-        "ims_org_id": "your-ims-org-id@AdobeOrg",
-        "scopes": [
-          "read",
-          "write"
-        ]
-      },
-      "current": "my_context"
-    }
-  }
-}
-```
-
-or set the current context to use the named context using aio:
-
-```bash
-aio config set ims.contexts.current my_context
-```
-
-#### Running in an Adobe I/O Runtime Action
-
-For Runtime actions, **aio-lib-db** relies on the underlying [`@adobe/aio-lib-ims`](https://github.com/adobe/aio-lib-ims) behavior, which automatically retrieves tokens from Adobe I/O Cloud State in Runtime environment.
+**aio-lib-db** requires an IMS access token for authentication. Generate the token using `@adobe/aio-sdk` and pass it in the config param.
 
 > [!IMPORTANT]
-> Make sure to add the `App Builder Data Services` API to the selected Adobe Developer Console project to adds the required database scopes to the workspace.
+> Add **App Builder Data Services** to your project to add the required database scopes (`adobeio.abdata.write`, `adobeio.abdata.read`, `adobeio.abdata.manage`). (See [APIs and Services](https://developer.adobe.com/developer-console/docs/guides/apis-and-services) in the [Getting Started with Database Storage](https://developer.adobe.com/app-builder/docs/guides/app_builder_guides/storage/database) guide for details.)
 
 ### Basic Usage
 
 ```javascript
+const { Core } = require('@adobe/aio-sdk');
 const libDb = require('@adobe/aio-lib-db');
 
-async function main() {
+// Runtime action params
+async function main(params) {
   let client;
   try {
-    // initialize library with the default amer region or what is defined in AIO_DB_REGION
-    const db = await libDb.init();
+    // Generate access token
+    const token = await Core.AuthClient.generateAccessToken(params);
 
-    // initialize library with an explicit region
-    // const db = await libDb.init({region: "emea"});
+    // Initialize library with token
+    const db = await libDb.init({ token });
 
-    // Optional: uses cached IMS token without refresh (default: `false`)
-    // const db = await libDb.init({ useCachedToken: true });
+    // or with explicit region, the default being amer region or whats is defined in AIO_DB_REGION
+    // const db = await libDb.init({ token, region: 'emea' });
 
-    // connect to the database
+    // Connect to the database
     client = await db.connect();
 
     // Get a collection
@@ -113,8 +66,9 @@ async function main() {
     }
   }
 }
-```
 
+exports.main = main;
+```
 ---
 
 ## Collection Operations
@@ -333,6 +287,24 @@ const cursor = collection.aggregate()
 
 ## Advanced Features
 
+### Storage Statics
+
+```javascript
+// Get storage statistics for the database
+const dbStats = client.dbStats()
+```
+| field returned | description                                   |
+|----------------|-----------------------------------------------|
+| collections    | the number of collections                     |
+| objects        | the number of objects/documents               |
+| views          | the number of views (not currently supported) |
+| indexes        | the number of indexes                         |
+| dataSize       | the actual amount of storage used in bytes    |
+| storageSize    | space allocated for storage in bytes          |
+| indexSize      | space allocated for indexes in bytes          |
+| ok             | whether the request was successful            |
+| lastUpdated    | when the statistics where last updated        |
+
 ### Indexing
 
 ```javascript
@@ -414,12 +386,10 @@ const cursor = collection.find({ status: 'active' })
 ## Error Handling
 
 ```javascript
-const { DbError } = require('@adobe/aio-lib-db');
-
 try {
   await collection.insertOne({ email: 'invalid-email' });
 } catch (error) {
-  if (error instanceof DbError) {
+  if (error.name == 'DbError') {
     console.error('Database error:', error.message);
   } else {
     console.error('Unexpected error:', error);

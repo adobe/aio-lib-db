@@ -17,9 +17,7 @@ const { EJSON } = require("bson")
 jest.mock('@adobe/aio-lib-env', () => ({
   getCliEnv: jest.fn()
 }))
-jest.mock('../utils/authHelper')
 const { getCliEnv } = require('@adobe/aio-lib-env')
-const { getAccessToken } = require('../utils/authHelper')
 
 const TEST_NAMESPACE = `testNamespace`
 const TEST_ACCESS_TOKEN = 'iamatesttoken'
@@ -39,12 +37,10 @@ beforeEach(() => {
   getCliEnv.mockReturnValue(PROD_ENV)
   delete process.env.__OW_ACTIVATION_ID // Ensure running in the default context
   delete process.env.AIO_DB_ENDPOINT // Ensure no endpoint override
-  // Mock IMS authentication
-  getAccessToken.mockResolvedValue({ accessToken: TEST_ACCESS_TOKEN })
 })
 
 function getDb() {
-  const db = new DbBase(TEST_REGION, TEST_NAMESPACE)
+  const db = new DbBase(TEST_REGION, TEST_NAMESPACE, TEST_ACCESS_TOKEN)
   // Ensure that an axios client has been created without session cookie tracking
   expect(axios.create).toHaveBeenCalledWith()
   expect(db.axiosClient.cookieJar).toBeUndefined()

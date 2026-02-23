@@ -1,6 +1,6 @@
 {
   "name": "@adobe/aio-lib-db",
-  "version": "0.1.0-beta.6",
+  "version": "0.1.0-beta.9",
   "description": "An abstraction on top of Document DB storage",
   "main": "index.js",
   "scripts": {
@@ -18,7 +18,6 @@
   "dependencies": {
     "@adobe/aio-lib-core-logging": "^3.0.2",
     "@adobe/aio-lib-env": "^3.0.1",
-    "@adobe/aio-lib-ims": "^8.1.1",
     "axios": "^1.8.4",
     "bson": "^6.10.3",
     "dotenv": "^17.0.0",

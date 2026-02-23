@@ -12,7 +12,6 @@ governing permissions and limitations under the License.
 const { RUNTIME_HEADER, REQUEST_ID_HEADER, IMS_AUTHORIZATION_HEADER, IMS_AUTHORIZATION_HEADER_PREFIX } = require('../lib/constants')
 const DbError = require('../lib/DbError')
 const { EJSON } = require("bson")
-const { getAccessToken } = require('./authHelper')
 
 /**
  * Execute a POST request to the App Builder Database Service API and return the data field from the result
@@ -61,11 +60,10 @@ async function apiRequest(db, axiosClient, apiPath, method, body = {}) {
   const fullUrl = `${db.serviceUrl}/${apiPath}`
   let res
   try {
-    const { accessToken } = await getAccessToken({ useCachedToken: db.useCachedToken === true })
     /** @type {Object}
      * @mixes AxiosRequestConfig */
     const reqConfig = {
-      headers: { [RUNTIME_HEADER]: db.runtimeNamespace, [IMS_AUTHORIZATION_HEADER]: IMS_AUTHORIZATION_HEADER_PREFIX + accessToken }
+      headers: { [RUNTIME_HEADER]: db.runtimeNamespace, [IMS_AUTHORIZATION_HEADER]: IMS_AUTHORIZATION_HEADER_PREFIX + db.accessToken }
     }
     if (method === 'GET') {
       res = await axiosClient.get(fullUrl, reqConfig)
