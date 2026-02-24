@@ -22,7 +22,13 @@ npm install @adobe/aio-lib-db
 
 **aio-lib-db** must be initialized in the region the workspace database was provisioned. Otherwise, the connection will fail.  To explicitly initialize the library in a specific region, pass the `{region: "<region>"}` argument to the `libDb.init()` method. Called with no arguments, `libDb.init()` will initialize the library either in the default `amer` region or in the region defined in the `AIO_DB_REGION` environment variable.
 
-**aio-lib-db** requires an IMS access token for authentication. Generate the token using `@adobe/aio-sdk` and pass it in the config param.
+**aio-lib-db** requires an IMS access token for authentication. Generate the token using `@adobe/aio-sdk` and pass the `{token : "<token>"}` argument to the `libDb.init()` method.
+
+```bash
+npm install @adobe/aio-sdk --save
+```
+
+To Add IMS credentials in your Runtime action parameter, set the action annotation `include-ims-credentials: true` in AIO App `app.config.yaml` file.
 
 > [!IMPORTANT]
 > Add **App Builder Data Services** to your project to add the required database scopes (`adobeio.abdata.write`, `adobeio.abdata.read`, `adobeio.abdata.manage`). (See [APIs and Services](https://developer.adobe.com/developer-console/docs/guides/apis-and-services) in the [Getting Started with Database Storage](https://developer.adobe.com/app-builder/docs/guides/app_builder_guides/storage/database) guide for details.)
@@ -30,7 +36,7 @@ npm install @adobe/aio-lib-db
 ### Basic Usage
 
 ```javascript
-const { Core } = require('@adobe/aio-sdk');
+const { generateAccessToken } = require('@adobe/aio-sdk').Core.AuthClient;
 const libDb = require('@adobe/aio-lib-db');
 
 // Runtime action params
@@ -38,7 +44,7 @@ async function main(params) {
   let client;
   try {
     // Generate access token
-    const token = await Core.AuthClient.generateAccessToken(params);
+    const token = await generateAccessToken(params);
 
     // Initialize library with token
     const db = await libDb.init({ token });
