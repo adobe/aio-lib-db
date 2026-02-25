@@ -30,6 +30,16 @@ npm install @adobe/aio-sdk --save
 
 To Add IMS credentials in your Runtime action parameter, set the action annotation `include-ims-credentials: true` in AIO App `app.config.yaml` file.
 
+```yaml
+actions:
+  action:
+    function: actions/generic/action.js
+    annotations:
+      include-ims-credentials: true
+      require-adobe-auth: true
+      final: true
+```
+
 > [!IMPORTANT]
 > Add **App Builder Data Services** to your project to add the required database scopes (`adobeio.abdata.write`, `adobeio.abdata.read`, `adobeio.abdata.manage`). (See [APIs and Services](https://developer.adobe.com/developer-console/docs/guides/apis-and-services) in the [Getting Started with Database Storage](https://developer.adobe.com/app-builder/docs/guides/app_builder_guides/storage/database) guide for details.)
 
@@ -47,10 +57,10 @@ async function main(params) {
     const token = await generateAccessToken(params);
 
     // Initialize library with token
-    const db = await libDb.init({ token });
+    const db = await libDb.init({ token: token });
 
     // or with explicit region, the default being amer region or whats is defined in AIO_DB_REGION
-    // const db = await libDb.init({ token, region: 'emea' });
+    // const db = await libDb.init({ token: token, region: 'emea' });
 
     // Connect to the database
     client = await db.connect();
