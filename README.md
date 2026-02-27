@@ -59,7 +59,7 @@ async function main(params) {
     // Initialize library with token
     const db = await libDb.init({ token: token });
 
-    // or with explicit region, the default being amer region or whats is defined in AIO_DB_REGION
+    // or with explicit region, the default being amer or whatever is defined in AIO_DB_REGION
     // const db = await libDb.init({ token: token, region: 'emea' });
 
     // Connect to the database
