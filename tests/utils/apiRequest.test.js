@@ -11,7 +11,7 @@ governing permissions and limitations under the License.
 */
 const { getDb } = require("../testingUtils")
 const { AxiosError } = jest.requireActual("axios")
-const { apiGet } = require("../../utils/apiRequest")
+const { apiGet, apiPost } = require("../../utils/apiRequest")
 
 describe('API Request Tests', () => {
   let db
@@ -19,6 +19,28 @@ describe('API Request Tests', () => {
   beforeEach(async () => {
     db = getDb()
     jest.clearAllMocks()
+  })
+
+  test('apiGet uses access token and makes request', async () => {
+    db.axiosClient.get.mockResolvedValue({
+      data: { success: true, data: { result: 'ok' } }
+    })
+
+    const result = await apiGet(db, db.axiosClient, 'db/ping')
+
+    expect(db.axiosClient.get).toHaveBeenCalled()
+    expect(result).toEqual({ result: 'ok' })
+  })
+
+  test('apiPost uses access token and makes request', async () => {
+    db.axiosClient.post.mockResolvedValue({
+      data: { success: true, data: { inserted: 1 } }
+    })
+
+    const result = await apiPost(db, db.axiosClient, 'collection/test/insertOne', { doc: { a: 1 } })
+
+    expect(db.axiosClient.post).toHaveBeenCalled()
+    expect(result).toEqual({ inserted: 1 })
   })
 
   test('apiRequest attaches http code when error occurs', async () => {

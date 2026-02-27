@@ -9,7 +9,7 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-const { getDb, TEST_NAMESPACE, TEST_AUTH } = require("../testingUtils")
+const { getDb, TEST_NAMESPACE, TEST_ACCESS_TOKEN } = require("../testingUtils")
 const DbBase = require("../../lib/DbBase")
 const {
   PROD_ENV, STAGE_ENV, ALLOWED_REGIONS, PROD_ENDPOINT_EXTERNAL, STAGE_ENDPOINT, PROD_ENDPOINT_RUNTIME
@@ -87,7 +87,7 @@ describe('DbBase tests', () => {
 
     for (const region of regions) {
       const expectedUrl = url.replaceAll(/<region>/gi, region)
-      const dbInstance = await DbBase.init({ region: region, namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
+      const dbInstance = await DbBase.init({ region: region, namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN })
       const axiosClient = dbInstance.axiosClient
       expect(dbInstance.serviceUrl).toBe(expectedUrl)
       await apiGet(dbInstance, axiosClient, 'db/ping')
@@ -99,7 +99,7 @@ describe('DbBase tests', () => {
     // Test default region
     const defaultRegion = regions.at(0)
     const expectedUrl = url.replaceAll(/<region>/gi, defaultRegion)
-    const defaultDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
+    const defaultDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN })
     const axiosClient = defaultDb.axiosClient
     expect(defaultDb.serviceUrl).toBe(expectedUrl)
     await apiGet(defaultDb, axiosClient, 'db/ping')
@@ -116,7 +116,7 @@ describe('DbBase tests', () => {
 
     // Test that override applies regardless of the execution context
     // Default (External)
-    const dbCustomExternal = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
+    const dbCustomExternal = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN })
     const externalAxios = dbCustomExternal.axiosClient
     expect(dbCustomExternal.serviceUrl).toBe(customEndpoint)
     await apiGet(dbCustomExternal, externalAxios, 'db/ping')
@@ -126,7 +126,7 @@ describe('DbBase tests', () => {
 
     // Runtime
     process.env.__OW_ACTIVATION_ID = 'some-activation-id'
-    const dbCustomRuntime = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
+    const dbCustomRuntime = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN })
     const runtimeAxios = dbCustomRuntime.axiosClient
     expect(dbCustomRuntime.serviceUrl).toBe(customEndpoint)
     await apiGet(dbCustomRuntime, runtimeAxios, 'db/ping')
@@ -152,11 +152,11 @@ describe('DbBase tests', () => {
     ]
 
     for (const r of allowed) {
-      await expect(DbBase.init({ region: r, namespace: TEST_NAMESPACE, apikey: TEST_AUTH })).resolves
+      await expect(DbBase.init({ region: r, namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN })).resolves
     }
     for (const r of unsupported) {
       await expect(
-        DbBase.init({ region: r, namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
+        DbBase.init({ region: r, namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN })
       ).rejects.toThrow(`Invalid region '${r}'`)
     }
   })
@@ -169,23 +169,23 @@ describe('DbBase tests', () => {
     // Set AIO_DB_ENVIRONMENT to prod and getCliEnv() to stage, expect prod
     process.env.AIO_DB_ENVIRONMENT = PROD_ENV
     getCliEnv.mockReturnValue(STAGE_ENV)
-    let dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    let dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
     expect(dbInstance.serviceUrl).toBe(prodUrl)
 
     // Set AIO_DB_ENVIRONMENT to stage and getCliEnv() to prod, expect stage
     process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
     getCliEnv.mockReturnValue(PROD_ENV)
-    dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
     expect(dbInstance.serviceUrl).toBe(stageUrl)
 
     // Remove AIO_DB_ENVIRONMENT, expect getCliEnv() to take precedence
     delete process.env.AIO_DB_ENVIRONMENT
     getCliEnv.mockReturnValue(PROD_ENV)
-    dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
     expect(dbInstance.serviceUrl).toBe(prodUrl)
 
     getCliEnv.mockReturnValue(STAGE_ENV)
-    dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    dbInstance = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
     expect(dbInstance.serviceUrl).toBe(stageUrl)
   })
 
@@ -201,30 +201,30 @@ describe('DbBase tests', () => {
     delete process.env.AIO_DEV
 
     process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
-    const runtimeStageDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    const runtimeStageDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
     expect(runtimeStageDb.serviceUrl).toBe(stageUrl)
 
     process.env.AIO_DB_ENVIRONMENT = PROD_ENV
-    const runtimeProdDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    const runtimeProdDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
     expect(runtimeProdDb.serviceUrl).toBe(runtimeProdUrl)
 
     delete process.env.AIO_DB_ENVIRONMENT
-    const runtimeDefaultDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    const runtimeDefaultDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
     expect(runtimeDefaultDb.serviceUrl).toBe(runtimeProdUrl)
 
     // Simulate "aio app dev" by setting AIO_DEV
     process.env.AIO_DEV = 'true'
 
     process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
-    const runtimeStageDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    const runtimeStageDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
     expect(runtimeStageDevDb.serviceUrl).toBe(stageUrl)
 
     process.env.AIO_DB_ENVIRONMENT = PROD_ENV
-    const runtimeProdDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    const runtimeProdDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
     expect(runtimeProdDevDb.serviceUrl).toBe(externalProdUrl)
 
     delete process.env.AIO_DB_ENVIRONMENT
-    const runtimeDefaultDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    const runtimeDefaultDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
     expect(runtimeDefaultDevDb.serviceUrl).toBe(externalProdUrl)
 
     // Test without __OW_ACTIVATION_ID (non-runtime context)
@@ -233,37 +233,37 @@ describe('DbBase tests', () => {
 
     process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
     // Stage endpoint is the same for both contexts
-    const externalStageDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    const externalStageDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
     expect(externalStageDb.serviceUrl).toBe(stageUrl)
 
     process.env.AIO_DB_ENVIRONMENT = PROD_ENV
-    const externalProdDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    const externalProdDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
     expect(externalProdDb.serviceUrl).toBe(externalProdUrl)
 
     delete process.env.AIO_DB_ENVIRONMENT
-    const externalDefaultDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    const externalDefaultDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
     expect(externalDefaultDb.serviceUrl).toBe(externalProdUrl)
 
     // Make sure external behavior doesn't change if AIO_DEV is set
     process.env.AIO_DEV = 'true'
 
     process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
-    const externalStageDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    const externalStageDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
     expect(externalStageDevDb.serviceUrl).toBe(stageUrl)
 
     process.env.AIO_DB_ENVIRONMENT = PROD_ENV
-    const externalProdDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    const externalProdDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
     expect(externalProdDevDb.serviceUrl).toBe(externalProdUrl)
 
     delete process.env.AIO_DB_ENVIRONMENT
-    const externalDefaultDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region })
+    const externalDefaultDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
     expect(externalDefaultDevDb.serviceUrl).toBe(externalProdUrl)
   })
 
   test('db should be initialized in region from manifest when available', async () => {
     getRegionFromAppConfig.mockReturnValue('emea')
 
-    const db = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
+    const db = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN })
 
     expect(db.region).toBe('emea')
     expect(getRegionFromAppConfig).toHaveBeenCalledWith(process.cwd())
@@ -272,7 +272,7 @@ describe('DbBase tests', () => {
   test('db initialization should fall back to config.region when manifest is not available', async () => {
     getRegionFromAppConfig.mockReturnValue(null)
 
-    const db = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region: 'apac' })
+    const db = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region: 'apac' })
 
     expect(db.region).toBe('apac')
   })
@@ -282,14 +282,14 @@ describe('DbBase tests', () => {
       throw new Error('YAML parsing error')
     })
 
-    await expect(DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH, region: 'amer' }))
+    await expect(DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region: 'amer' }))
       .rejects.toThrow('Error reading region from app config: YAML parsing error')
   })
 
   test('db initialization should use default region when no manifest or config region available', async () => {
     getRegionFromAppConfig.mockReturnValue(null)
 
-    const db = await DbBase.init({ namespace: TEST_NAMESPACE, apikey: TEST_AUTH })
+    const db = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN })
 
     expect(db.region).toBe(ALLOWED_REGIONS[getCliEnv()].at(0))
   })
