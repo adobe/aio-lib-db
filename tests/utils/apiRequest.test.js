@@ -12,7 +12,6 @@ governing permissions and limitations under the License.
 const { getDb } = require("../testingUtils")
 const { AxiosError } = jest.requireActual("axios")
 const { apiGet, apiPost } = require("../../utils/apiRequest")
-const { EJSON } = require("bson")
 
 describe('API Request Tests', () => {
   let db

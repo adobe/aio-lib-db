@@ -1,6 +1,6 @@
 {
   "name": "@adobe/aio-lib-db",
-  "version": "0.1.0-beta.9",
+  "version": "0.2.0-beta.1",
   "description": "An abstraction on top of Document DB storage",
   "main": "index.js",
   "scripts": {
