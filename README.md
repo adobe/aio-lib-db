@@ -22,21 +22,47 @@ npm install @adobe/aio-lib-db
 
 **aio-lib-db** must be initialized in the region the workspace database was provisioned. Otherwise, the connection will fail.  To explicitly initialize the library in a specific region, pass the `{region: "<region>"}` argument to the `libDb.init()` method. Called with no arguments, `libDb.init()` will initialize the library either in the default `amer` region or in the region defined in the `AIO_DB_REGION` environment variable.
 
+**aio-lib-db** requires an IMS access token for authentication. Generate the token using `@adobe/aio-sdk` and pass the `{token : "<token>"}` argument to the `libDb.init()` method.
+
+```bash
+npm install @adobe/aio-sdk --save
+```
+
+To Add IMS credentials in your Runtime action parameter, set the action annotation `include-ims-credentials: true` in AIO App `app.config.yaml` file.
+
+```yaml
+actions:
+  action:
+    function: actions/generic/action.js
+    annotations:
+      include-ims-credentials: true
+      require-adobe-auth: true
+      final: true
+```
+
+> [!IMPORTANT]
+> Add **App Builder Data Services** to your project to add the required database scopes (`adobeio.abdata.write`, `adobeio.abdata.read`, `adobeio.abdata.manage`). (See [APIs and Services](https://developer.adobe.com/developer-console/docs/guides/apis-and-services) in the [Getting Started with Database Storage](https://developer.adobe.com/app-builder/docs/guides/app_builder_guides/storage/database) guide for details.)
+
 ### Basic Usage
 
 ```javascript
+const { generateAccessToken } = require('@adobe/aio-sdk').Core.AuthClient;
 const libDb = require('@adobe/aio-lib-db');
 
-async function main() {
+// Runtime action params
+async function main(params) {
   let client;
   try {
-    // initialize library with the default amer region or what is defined in AIO_DB_REGION
-    const db = await libDb.init();
+    // Generate access token
+    const token = await generateAccessToken(params);
 
-    // initialize library with an explicit region
-    // const db = await libDb.init({region: "emea"});
+    // Initialize library with token
+    const db = await libDb.init({ token: token });
 
-    // connect to the database
+    // or with explicit region, the default being amer or whatever is defined in AIO_DB_REGION
+    // const db = await libDb.init({ token: token, region: 'emea' });
+
+    // Connect to the database
     client = await db.connect();
 
     // Get a collection

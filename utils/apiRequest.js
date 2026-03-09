@@ -9,7 +9,7 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-const { RUNTIME_HEADER, REQUEST_ID_HEADER } = require('../lib/constants')
+const { RUNTIME_HEADER, REQUEST_ID_HEADER, IMS_AUTHORIZATION_HEADER, IMS_AUTHORIZATION_HEADER_PREFIX } = require('../lib/constants')
 const DbError = require('../lib/DbError')
 const { EJSON } = require("bson")
 
@@ -60,15 +60,10 @@ async function apiRequest(db, axiosClient, apiPath, method, body = {}) {
   const fullUrl = `${db.serviceUrl}/${apiPath}`
   let res
   try {
-    const creds = db.runtimeAuth.split(/:(.*)/,2)
     /** @type {Object}
      * @mixes AxiosRequestConfig */
     const reqConfig = {
-      headers: { [RUNTIME_HEADER]: db.runtimeNamespace },
-      auth: {
-        username: creds[0],
-        password: creds[1]
-      }
+      headers: { [RUNTIME_HEADER]: db.runtimeNamespace, [IMS_AUTHORIZATION_HEADER]: IMS_AUTHORIZATION_HEADER_PREFIX + db.accessToken }
     }
     if (method === 'GET') {
       res = await axiosClient.get(fullUrl, reqConfig)
