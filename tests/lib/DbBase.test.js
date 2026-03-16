@@ -152,7 +152,9 @@ describe('DbBase tests', () => {
     ]
 
     for (const r of allowed) {
-      await expect(DbBase.init({ region: r, namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN })).resolves
+      await expect(
+        DbBase.init({ region: r, namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN })
+      ).resolves.not.toThrow()
     }
     for (const r of unsupported) {
       await expect(
@@ -190,6 +192,8 @@ describe('DbBase tests', () => {
   })
 
   test('uses correct endpoints based on execution context', async () => {
+    // Make sure to use a non-prod namespace to avoid restriction when AIO_DEV is set
+    const nonProdNs = `${TEST_NAMESPACE}-dev`
     const region = 'amer'
     const stageUrl = STAGE_ENDPOINT.replaceAll(/<region>/gi, region)
     const runtimeProdUrl = PROD_ENDPOINT_RUNTIME.replaceAll(/<region>/gi, region)
@@ -201,30 +205,30 @@ describe('DbBase tests', () => {
     delete process.env.AIO_DEV
 
     process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
-    const runtimeStageDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
+    const runtimeStageDb = await DbBase.init({ namespace: nonProdNs, token: TEST_ACCESS_TOKEN, region })
     expect(runtimeStageDb.serviceUrl).toBe(stageUrl)
 
     process.env.AIO_DB_ENVIRONMENT = PROD_ENV
-    const runtimeProdDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
+    const runtimeProdDb = await DbBase.init({ namespace: nonProdNs, token: TEST_ACCESS_TOKEN, region })
     expect(runtimeProdDb.serviceUrl).toBe(runtimeProdUrl)
 
     delete process.env.AIO_DB_ENVIRONMENT
-    const runtimeDefaultDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
+    const runtimeDefaultDb = await DbBase.init({ namespace: nonProdNs, token: TEST_ACCESS_TOKEN, region })
     expect(runtimeDefaultDb.serviceUrl).toBe(runtimeProdUrl)
 
     // Simulate "aio app dev" by setting AIO_DEV
     process.env.AIO_DEV = 'true'
 
     process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
-    const runtimeStageDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
+    const runtimeStageDevDb = await DbBase.init({ namespace: nonProdNs, token: TEST_ACCESS_TOKEN, region })
     expect(runtimeStageDevDb.serviceUrl).toBe(stageUrl)
 
     process.env.AIO_DB_ENVIRONMENT = PROD_ENV
-    const runtimeProdDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
+    const runtimeProdDevDb = await DbBase.init({ namespace: nonProdNs, token: TEST_ACCESS_TOKEN, region })
     expect(runtimeProdDevDb.serviceUrl).toBe(externalProdUrl)
 
     delete process.env.AIO_DB_ENVIRONMENT
-    const runtimeDefaultDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
+    const runtimeDefaultDevDb = await DbBase.init({ namespace: nonProdNs, token: TEST_ACCESS_TOKEN, region })
     expect(runtimeDefaultDevDb.serviceUrl).toBe(externalProdUrl)
 
     // Test without __OW_ACTIVATION_ID (non-runtime context)
@@ -233,30 +237,30 @@ describe('DbBase tests', () => {
 
     process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
     // Stage endpoint is the same for both contexts
-    const externalStageDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
+    const externalStageDb = await DbBase.init({ namespace: nonProdNs, token: TEST_ACCESS_TOKEN, region })
     expect(externalStageDb.serviceUrl).toBe(stageUrl)
 
     process.env.AIO_DB_ENVIRONMENT = PROD_ENV
-    const externalProdDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
+    const externalProdDb = await DbBase.init({ namespace: nonProdNs, token: TEST_ACCESS_TOKEN, region })
     expect(externalProdDb.serviceUrl).toBe(externalProdUrl)
 
     delete process.env.AIO_DB_ENVIRONMENT
-    const externalDefaultDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
+    const externalDefaultDb = await DbBase.init({ namespace: nonProdNs, token: TEST_ACCESS_TOKEN, region })
     expect(externalDefaultDb.serviceUrl).toBe(externalProdUrl)
 
     // Make sure external behavior doesn't change if AIO_DEV is set
     process.env.AIO_DEV = 'true'
 
     process.env.AIO_DB_ENVIRONMENT = STAGE_ENV
-    const externalStageDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
+    const externalStageDevDb = await DbBase.init({ namespace: nonProdNs, token: TEST_ACCESS_TOKEN, region })
     expect(externalStageDevDb.serviceUrl).toBe(stageUrl)
 
     process.env.AIO_DB_ENVIRONMENT = PROD_ENV
-    const externalProdDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
+    const externalProdDevDb = await DbBase.init({ namespace: nonProdNs, token: TEST_ACCESS_TOKEN, region })
     expect(externalProdDevDb.serviceUrl).toBe(externalProdUrl)
 
     delete process.env.AIO_DB_ENVIRONMENT
-    const externalDefaultDevDb = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN, region })
+    const externalDefaultDevDb = await DbBase.init({ namespace: nonProdNs, token: TEST_ACCESS_TOKEN, region })
     expect(externalDefaultDevDb.serviceUrl).toBe(externalProdUrl)
   })
 
@@ -292,5 +296,33 @@ describe('DbBase tests', () => {
     const db = await DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN })
 
     expect(db.region).toBe(ALLOWED_REGIONS[getCliEnv()].at(0))
+  })
+
+  test('db initialization should throw error when trying to use production workspace with aio app dev', async () => {
+    // TEST_NAMESPACE is a prod workspace in the prod runtime, nonProdRuntime is a prod workspace in the stage runtime
+    // Both should fail when AIO_DEV is set (aio app dev)
+    const nonProdRuntime = `development-${TEST_NAMESPACE}`
+
+    // Non-prod workspaces should be allowed regardless
+    const nonProdWorkspace = `${TEST_NAMESPACE}-nonProd`
+    const nonProdWorkspaceRuntimeEnv = `development-${TEST_NAMESPACE}-nonProd`
+
+    // Test that init only passes without a namespace suffix when running in dev mode
+    process.env.AIO_DEV = 'true'
+    await expect(DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN })).rejects.toThrow('prod')
+    await expect(DbBase.init({ namespace: nonProdRuntime, token: TEST_ACCESS_TOKEN })).rejects.toThrow('prod')
+    await expect(DbBase.init({ namespace: nonProdWorkspace, token: TEST_ACCESS_TOKEN })).resolves.not.toThrow()
+    await expect(
+      DbBase.init({ namespace: nonProdWorkspaceRuntimeEnv, token: TEST_ACCESS_TOKEN })
+    ).resolves.not.toThrow()
+
+    // Test that init accepts any namespace when not running in dev mode
+    delete process.env.AIO_DEV
+    await expect(DbBase.init({ namespace: TEST_NAMESPACE, token: TEST_ACCESS_TOKEN })).resolves.not.toThrow()
+    await expect(DbBase.init({ namespace: nonProdWorkspace, token: TEST_ACCESS_TOKEN })).resolves.not.toThrow()
+    await expect(DbBase.init({ namespace: nonProdRuntime, token: TEST_ACCESS_TOKEN })).resolves.not.toThrow()
+    await expect(
+      DbBase.init({ namespace: nonProdWorkspaceRuntimeEnv, token: TEST_ACCESS_TOKEN })
+    ).resolves.not.toThrow()
   })
 })
