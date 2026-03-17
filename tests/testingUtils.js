@@ -19,7 +19,7 @@ jest.mock('@adobe/aio-lib-env', () => ({
 }))
 const { getCliEnv } = require('@adobe/aio-lib-env')
 
-const TEST_NAMESPACE = `testNamespace`
+const TEST_NAMESPACE = `123456-testNamespace`
 const TEST_ACCESS_TOKEN = 'iamatesttoken'
 
 const TEST_REQ_CONFIG = {
@@ -37,6 +37,7 @@ beforeEach(() => {
   getCliEnv.mockReturnValue(PROD_ENV)
   delete process.env.__OW_ACTIVATION_ID // Ensure running in the default context
   delete process.env.AIO_DB_ENDPOINT // Ensure no endpoint override
+  delete process.env.AIO_DEV // Ensure not running in dev mode
 })
 
 function getDb() {
