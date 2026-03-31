@@ -1,0 +1,4 @@
+{
+  "name": "plain-crypto-js",
+  "description": "A malicious package that was published to npm in axios version 1.14.1, see https://www.stepsecurity.io/blog/axios-compromised-on-npm-malicious-versions-drop-remote-access-trojan#for-the-community-recovery-steps"
+}
