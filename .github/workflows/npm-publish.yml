@@ -69,6 +69,7 @@ jobs:
         with:
           token: ${{ secrets.ADOBE_BOT_NPM_TOKEN }}
           tag: ${{ steps.version_check.outputs.npm_tag }}
+          provenance: true
           access: 'public'
 
       - name: Create git tag
