@@ -131,3 +131,6 @@ dist
 
 #lock file
 package-lock.json
+
+#scout configs
+.scout/
