@@ -20,7 +20,7 @@
     "@adobe/aio-lib-env": "^3.0.1",
     "axios": "^1.15.0",
     "bson": "^6.10.3",
-    "dotenv": "^17.0.0",
+    "dotenv": "^18.0.0",
     "http-cookie-agent": "^6.0.8",
     "js-yaml": "^4.1.0",
     "tough-cookie": "^5.1.2"
