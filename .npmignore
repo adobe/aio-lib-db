@@ -5,6 +5,7 @@
 !/lib/
 !/utils/
 !index.js
+!index.d.ts
 !README.md
 !LICENSE
 !COPYRIGHT

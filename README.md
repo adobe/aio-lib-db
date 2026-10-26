@@ -32,6 +32,97 @@ Main documentation for App Builder Database Storage:
 
 ---
 
+## TypeScript
+
+Starting with 1.1.0, this package includes declarations. The runtime remains
+CommonJS and supports Node.js 18 and later. Declarations are tested with
+TypeScript 5.7, 6.0 and 7.0 using strict checking, including declaration checking
+(`skipLibCheck: false`). Node type definitions (`@types/node`) are required.
+
+Supported resolution modes are `node16`, `nodenext` and `bundler`. Legacy `node`
+resolution is also tested on TypeScript 5.7; newer compilers may deprecate or
+remove that mode.
+
+CommonJS TypeScript:
+
+```typescript
+import libDb = require('@adobe/aio-lib-db')
+```
+
+ES modules, or CommonJS TypeScript with `esModuleInterop: true`:
+
+```typescript
+import libDb from '@adobe/aio-lib-db'
+```
+
+Named `init` imports also work. Only `init` is a runtime export; types such as
+`DbClient`, `DbCollection`, `FindCursor` and `DbError` are type-only exports, not
+constructors.
+
+```typescript
+import libDb from '@adobe/aio-lib-db'
+
+interface User {
+  name: string
+  age: number
+}
+
+async function adultNames(token: string) {
+  const db = await libDb.init({ token })
+  const client = await db.connect()
+  try {
+    const users = client.collection<User>('users')
+    return await users.find({ age: { $gte: 18 } })
+      .map(user => user.name)
+      .toArray()
+  } finally {
+    await client.close()
+  }
+}
+```
+
+Collection type parameters describe application documents; they do not validate
+stored data. Include `_id` in your schema when using it. Supply the output type
+when a projection or aggregation changes the document shape. Cursor `next()`
+returns `null` at exhaustion; `map()` also supports asynchronous transformations.
+Configure cursors before iteration starts, or the runtime throws. `stream()`
+returns a Node readable stream with an optional synchronous transform.
+
+These declarations do not promise full MongoDB-driver compatibility. Known
+option values and schema fields are checked; extra service options, dotted
+paths, query operators and aggregation expressions remain open. Service
+write/admin response objects use `Record<string, unknown>`, and unspecified
+payloads such as the `createIndex()` response use `unknown`: narrow those values
+before use instead of assuming MongoDB result fields. This library passes service
+payloads through after Extended JSON decoding. See the
+[compatibility guide](https://developer.adobe.com/app-builder/docs/guides/app_builder_guides/storage/db-mongo-compatibility)
+for service support; only cursor methods implemented by this library are exposed.
+Errors can be `DbError`-shaped (including `requestId`, `httpStatusCode` and an
+optional `cause`) or other errors; narrow caught `unknown` values before use.
+
+### Migrating from temporary declarations or import suppressions
+
+After updating to the typed release, remove temporary application-local
+declarations for `@adobe/aio-lib-db` so they do not mask the package contract.
+Remove targeted import `@ts-expect-error` directives, including in setup scripts
+imported by SDK-generated installation actions and in runtime actions. A
+previously necessary directive now reports **TS2578: Unused '@ts-expect-error'
+directive**. Do not replace it with `@ts-ignore` or disable strict checking.
+Run your application's strict compiler check and `aio app build` after removal.
+Declarations improve compiler checking; they do not provision a database or prove
+live database behavior.
+
+### Declaration maintenance
+
+The declarations are authored in `index.d.ts`; update them with public API
+changes. `npm test` runs the existing mocked runtime tests and packed-package
+consumer compiler tests, including negative usage cases. No database is contacted.
+The compiler tests exercise the npm artifact, not a source-only declaration path.
+Generating declarations from improved JSDoc is a possible future maintainer-led
+alternative; the current JSDoc does not specify the complete type contract.
+
+---
+
 ## Support
 
 For issues, feature requests, or questions, please refer to the project's issue tracker or documentation.
