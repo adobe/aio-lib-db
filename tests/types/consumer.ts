@@ -119,6 +119,47 @@ export async function exercise(libDb: typeof import('@adobe/aio-lib-db')) {
   const distinctOptions: CommandOperationOptions = metadataFlag ? { explain: false } : {}
   expectType<Document | unknown[]>(await users.distinct('name', {}, distinctOptions))
 
+  await users.updateOne({}, {}, { explain: 'queryPlanner', comment: 'compile-only' })
+  await users.updateMany({}, {}, { explain: { verbosity: 'queryPlanner' } })
+  await users.deleteOne({}, { explain: 'queryPlanner' })
+  await users.deleteMany({}, { explain: { verbosity: 'queryPlanner' } })
+  await users.findOneAndUpdate({}, {}, { explain: 'queryPlanner' })
+  await users.findOneAndReplace({}, { name: 'Ada', age: 30 }, { explain: { verbosity: 'queryPlanner' } })
+  await users.findOneAndDelete({}, { explain: 'queryPlanner' })
+  expectType<Document>(await users.distinct('name', {}, { explain: 'executionStats' }))
+  expectType<Document>(await users.distinct('name', {}, { explain: { verbosity: 'executionStats' } }))
+
+  // @ts-expect-error DocumentDB does not support executionStats for updates.
+  users.updateOne({}, {}, { explain: 'executionStats' })
+  // @ts-expect-error Object-form verbosity has the same update restrictions.
+  users.updateMany({}, {}, { explain: { verbosity: 'executionStats' } })
+  // @ts-expect-error DocumentDB does not support executionStats for deletes.
+  users.deleteOne({}, { explain: 'executionStats' })
+  // @ts-expect-error Object-form verbosity has the same delete restrictions.
+  users.deleteMany({}, { explain: { verbosity: 'executionStats' } })
+  // @ts-expect-error Find-and-modify updates do not support executionStats.
+  users.findOneAndUpdate({}, {}, { explain: 'executionStats' })
+  // @ts-expect-error Replacement explain modes are also limited to queryPlanner.
+  users.findOneAndReplace({}, { name: 'Ada', age: 30 }, { explain: { verbosity: 'executionStats' } })
+  // @ts-expect-error Find-and-modify deletes do not support executionStats.
+  users.findOneAndDelete({}, { explain: 'executionStats' })
+  // @ts-expect-error DocumentDB comments must be strings, not BSON documents.
+  users.updateOne({}, {}, { comment: { source: 'compile-only' } })
+  // @ts-expect-error Find comments must also be strings.
+  users.find({}, { comment: 42 })
+  // @ts-expect-error Aggregation comments must also be strings.
+  users.aggregate([], { comment: { source: 'compile-only' } })
+  // @ts-expect-error Count limits are non-functional and not part of the contract.
+  users.countDocuments({}, { limit: 1 })
+  // @ts-expect-error The deprecated count alias uses the same restricted options.
+  users.count({}, { limit: 1 })
+  // @ts-expect-error Server ID generation is outside the declared insert contract.
+  users.insertOne({ name: 'Ada', age: 30 }, { forceServerObjectId: true })
+  // @ts-expect-error Server ID generation is outside the declared multi-insert contract.
+  users.insertMany([], { forceServerObjectId: true })
+  // @ts-expect-error Server ID generation is outside the declared bulk-write contract.
+  users.bulkWrite([], { forceServerObjectId: true })
+
   // @ts-expect-error Metadata wraps the document rather than exposing its schema directly.
   expectType<User | null>(updated)
   // @ts-expect-error Explanation results are documents, not value arrays.
