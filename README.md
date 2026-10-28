@@ -88,9 +88,12 @@ returns `null` at exhaustion; `map()` also supports asynchronous transformations
 Configure cursors before iteration starts, or the runtime throws. `stream()`
 returns a Node readable stream with an optional synchronous transform.
 
-These declarations do not promise full MongoDB-driver compatibility. Known
-option values and schema fields are checked; extra service options, dotted
-paths, query operators and aggregation expressions remain open. Service
+These declarations do not promise full MongoDB-driver compatibility. Options are
+operation-specific: the library forwards them, but the service rejects unknown
+option names. Schema fields are checked; dotted paths, query operators and
+aggregation expressions remain open. Pipeline stages are restricted to the
+supported stage names, with one stage per object, including nested lookup
+pipelines. Service
 write/admin response objects use `Record<string, unknown>`, and unspecified
 payloads such as the `createIndex()` response use `unknown`: narrow those values
 before use instead of assuming MongoDB result fields. This library passes service
@@ -99,6 +102,19 @@ payloads through after Extended JSON decoding. See the
 for service support; only cursor methods implemented by this library are exposed.
 Errors can be `DbError`-shaped (including `requestId`, `httpStatusCode` and an
 optional `cause`) or other errors; narrow caught `unknown` values before use.
+
+For `findOneAndUpdate`, `findOneAndReplace` and `findOneAndDelete`,
+`includeResultMetadata: true` returns a wrapper whose `value` is the selected
+document or `null`. Without that option, the document or `null` is returned
+directly. `distinct` returns a values array normally and a plan document when an
+explain option is supplied; for driver-backed operations, even `explain: false`
+requests `queryPlanner` rather than disabling explain.
+
+Use `collection.aggregate(pipeline).explain()` for aggregation explanations.
+Do not pass `{ explain: true }` to `aggregate()` and iterate the returned cursor:
+iteration expects a cursor response, not an explanation document. Response
+decoding is controlled by this library's EJSON handling, not directly by the
+MongoDB driver's BSON options.
 
 ### Migrating from temporary declarations or import suppressions
 

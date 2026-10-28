@@ -10,7 +10,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 import type {
-  AggregateCursor, DbBase, DbClient, DbCollection, DbError, Document, FindCursor
+  AggregateCursor, CommandOperationOptions, DbBase, DbClient, DbCollection, DbError, Document, FindCursor, ModifyResult
 } from '@adobe/aio-lib-db'
 import type { Long } from 'bson'
 import type { Readable } from 'node:stream'
@@ -94,6 +94,65 @@ export async function exercise(libDb: typeof import('@adobe/aio-lib-db')) {
   expectType<number[]>(await users.aggregate<{ count: number }>().map(doc => doc.count).toArray())
   expectType<Document>(await users.aggregate().explain())
   expectType<void>(await client.close())
+
+  expectType<number>(await users.countDocuments({}, { skip: 1, limit: 10 }))
+  users.count({}, { skip: 1, limit: 10 })
+  users.find({}, { allowPartialResults: true })
+  await users.findOne({}, { allowPartialResults: true })
+  await users.findArray({}, { allowPartialResults: true })
+  await users.insertOne({ name: 'Ada', age: 30 }, { forceServerObjectId: true, writeConcern: { w: 'majority' } })
+  await users.insertMany([], { forceServerObjectId: true })
+  await users.bulkWrite([], { forceServerObjectId: true })
+  await users.createIndex({ age: 1 }, { background: true })
+  users.aggregate([], { writeConcern: { w: 'majority' } })
+
+  const updated = await users.findOneAndUpdate({}, {}, { includeResultMetadata: true })
+  expectType<User | null>(updated.value)
+  expectType<ModifyResult<User>>(await users.findOneAndReplace({}, { name: 'Ada', age: 30 }, { includeResultMetadata: true }))
+  expectType<ModifyResult<User>>(await users.findOneAndDelete({}, { includeResultMetadata: true }))
+  expectType<User | null>(await users.findOneAndDelete({}, { includeResultMetadata: false }))
+  const metadataFlag: boolean = Math.random() > 0.5
+  expectType<User | ModifyResult<User> | null>(await users.findOneAndUpdate({}, {}, { includeResultMetadata: metadataFlag }))
+  expectType<User | ModifyResult<User> | null>(await users.findOneAndReplace({}, { name: 'Ada', age: 30 }, { includeResultMetadata: metadataFlag }))
+  expectType<User | ModifyResult<User> | null>(await users.findOneAndDelete({}, { includeResultMetadata: metadataFlag }))
+  expectType<ModifyResult<{ name: string }>>(await users.findOneAndUpdate<{ name: string }>(
+    {}, {}, { projection: { name: 1 }, includeResultMetadata: true }
+  ))
+  expectType<Document>(await users.distinct('name', {}, { explain: 'queryPlanner' }))
+  expectType<Document>(await users.distinct('name', {}, { explain: false }))
+  const distinctOptions: CommandOperationOptions = metadataFlag ? { explain: false } : {}
+  expectType<Document | unknown[]>(await users.distinct('name', {}, distinctOptions))
+
+  // @ts-expect-error Metadata wraps the document rather than exposing its schema directly.
+  expectType<User | null>(updated)
+  // @ts-expect-error Explanation results are documents, not value arrays.
+  expectType<unknown[]>(await users.distinct('name', {}, { explain: false }))
+  // @ts-expect-error A dynamic metadata flag does not guarantee a direct document.
+  expectType<User | null>(await users.findOneAndDelete({}, { includeResultMetadata: metadataFlag }))
+  // @ts-expect-error Optional explain settings do not guarantee an array.
+  expectType<unknown[]>(await users.distinct('name', {}, distinctOptions))
+  // @ts-expect-error Explain mode does not promise a schema-shaped document.
+  expectType<User | null>(await users.findOneAndUpdate({}, {}, { explain: false }))
+  // @ts-expect-error Count offsets must be numeric.
+  users.countDocuments({}, { skip: 'one' })
+  // @ts-expect-error Partial-results options must be boolean.
+  users.find({}, { allowPartialResults: 'yes' })
+  // @ts-expect-error Explain responses cannot be iterated as ordinary aggregation cursors.
+  users.aggregate([], { explain: true })
+  // @ts-expect-error The service forbids overriding allowDiskUse.
+  users.aggregate([], { allowDiskUse: true })
+  // @ts-expect-error The service forbids authorizedCollections.
+  client.listCollections({}, { authorizedCollections: true })
+  // @ts-expect-error findArray always returns a single batch.
+  users.findArray({}, { batchSize: 10 })
+  // @ts-expect-error Read-only find operations do not accept write concern.
+  users.findOne({}, { writeConcern: { w: 1 } })
+  // @ts-expect-error Listing collections does not accept write concern.
+  client.listCollections({}, { writeConcern: { w: 1 } })
+  // @ts-expect-error Only one stage is allowed per pipeline object.
+  users.aggregate([{ $limit: 1, $skip: 1 }])
+  // @ts-expect-error Nested pipelines have the same supported-stage restrictions.
+  users.aggregate([{ $lookup: { pipeline: [{ $set: { age: 1 } }] } }])
 
   try {
     await users.findOne({})

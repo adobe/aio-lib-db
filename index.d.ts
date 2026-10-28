@@ -101,9 +101,16 @@ declare namespace libDb {
 
   type ExplainVerbosity = 'queryPlanner' | 'executionStats'
 
+  interface WriteConcern {
+    w?: number | 'majority'
+    journal?: boolean
+    wtimeoutMS?: number
+  }
+
   interface CommandOperationOptions<TVerbosity extends ExplainVerbosity = ExplainVerbosity>
     extends OperationOptions {
     readConcern?: { level: 'local' | 'available' | 'majority' }
+    writeConcern?: WriteConcern
     maxTimeMS?: number
     comment?: string
     explain?: false | TVerbosity | { verbosity: TVerbosity; maxTimeMS?: number }
@@ -111,11 +118,13 @@ declare namespace libDb {
 
   interface InsertOneOptions extends Omit<CommandOperationOptions, 'explain'> {
     bypassDocumentValidation?: boolean
+    forceServerObjectId?: boolean
   }
 
   interface InsertManyOptions extends Omit<CommandOperationOptions, 'explain'> {
     bypassDocumentValidation?: boolean
     ordered?: boolean
+    forceServerObjectId?: boolean
   }
 
   interface FindOptions {
@@ -126,12 +135,13 @@ declare namespace libDb {
     limit?: number
     batchSize?: number
     singleBatch?: boolean
+    allowPartialResults?: boolean
     comment?: string
     maxTimeMS?: number
     readConcern?: CommandOperationOptions['readConcern']
   }
 
-  interface FindOneOptions extends Omit<CommandOperationOptions, 'explain'> {
+  interface FindOneOptions extends Omit<CommandOperationOptions, 'explain' | 'writeConcern'> {
     limit?: number
     sort?: Document
     projection?: Document
@@ -140,6 +150,7 @@ declare namespace libDb {
     batchSize?: number
     maxTimeMS?: number
     singleBatch?: boolean
+    allowPartialResults?: boolean
     readPreference?: OperationOptions['readPreference']
     readConcern?: CommandOperationOptions['readConcern']
     comment?: string
@@ -193,16 +204,19 @@ declare namespace libDb {
   interface BulkWriteOptions extends Omit<CommandOperationOptions, 'explain'> {
     ordered?: boolean
     bypassDocumentValidation?: boolean
+    forceServerObjectId?: boolean
   }
 
   interface AggregateOptions {
-    explain?: true
+    /** Use AggregateCursor.explain() instead of requesting a non-cursor response here. */
+    explain?: never
     batchSize?: number
     maxTimeMS?: number
     bypassDocumentValidation?: boolean
     readConcern?: CommandOperationOptions['readConcern']
     hint?: string | Document
     comment?: string
+    writeConcern?: WriteConcern
   }
 
   interface AggregateStageDefinitions {
@@ -237,6 +251,8 @@ declare namespace libDb {
   type AggregatePipeline = AggregateStage[]
 
   interface CountDocumentsOptions extends CommandOperationOptions {
+    skip?: number
+    limit?: number
     batchSize?: number
     bypassDocumentValidation?: boolean
     maxTimeMS?: number
@@ -251,7 +267,7 @@ declare namespace libDb {
     scale?: number
   }
 
-  interface ListCollectionsOptions extends Omit<CommandOperationOptions, 'explain'> {
+  interface ListCollectionsOptions extends Omit<CommandOperationOptions, 'explain' | 'writeConcern'> {
     nameOnly?: boolean
   }
 
@@ -264,6 +280,7 @@ declare namespace libDb {
   type IndexSpecification = Record<string, 1 | -1 | 'text' | '2dsphere'>
 
   interface IndexOptions extends Omit<CommandOperationOptions, 'explain'> {
+    background?: boolean
     unique?: boolean
     name?: string
     partialFilterExpression?: Document
@@ -280,6 +297,16 @@ declare namespace libDb {
     | { deleteOne: { filter: Filter<T> } }
     | { deleteMany: { filter: Filter<T> } }
 
+  interface ModifyResult<T> extends Document {
+    value: T | null
+  }
+
+  type ModifyOptions<O, Metadata extends boolean = boolean> =
+    Omit<O, 'explain' | 'includeResultMetadata'> & {
+      explain?: never
+      includeResultMetadata?: Metadata
+    }
+
   /**
    * T describes application documents, not runtime validation. Include _id in T if
    * needed. Projections and aggregation results must describe their output explicitly.
@@ -294,12 +321,42 @@ declare namespace libDb {
     findOne<R extends object = T>(filter: Filter<T>, options?: FindOneOptions): Promise<R | null>
     find(filter?: Filter<T>, options?: FindOptions): FindCursor<T, T>
     findOneAndUpdate<R extends object = T>(
+      filter: Filter<T>, update: Update<T>,
+      options: ModifyOptions<FindOneAndUpdateOptions, true> & { includeResultMetadata: true }
+    ): Promise<ModifyResult<R>>
+    findOneAndUpdate<R extends object = T>(
+      filter: Filter<T>, update: Update<T>, options?: ModifyOptions<FindOneAndUpdateOptions, false>
+    ): Promise<R | null>
+    findOneAndUpdate<R extends object = T>(
+      filter: Filter<T>, update: Update<T>, options: ModifyOptions<FindOneAndUpdateOptions>
+    ): Promise<R | ModifyResult<R> | null>
+    findOneAndUpdate<R extends object = T>(
       filter: Filter<T>, update: Update<T>, options?: FindOneAndUpdateOptions
+    ): Promise<R | Document | null>
+    findOneAndReplace<R extends object = T>(
+      filter: Filter<T>, replacement: T,
+      options: ModifyOptions<FindOneAndReplaceOptions, true> & { includeResultMetadata: true }
+    ): Promise<ModifyResult<R>>
+    findOneAndReplace<R extends object = T>(
+      filter: Filter<T>, replacement: T, options?: ModifyOptions<FindOneAndReplaceOptions, false>
     ): Promise<R | null>
     findOneAndReplace<R extends object = T>(
+      filter: Filter<T>, replacement: T, options: ModifyOptions<FindOneAndReplaceOptions>
+    ): Promise<R | ModifyResult<R> | null>
+    findOneAndReplace<R extends object = T>(
       filter: Filter<T>, replacement: T, options?: FindOneAndReplaceOptions
+    ): Promise<R | Document | null>
+    findOneAndDelete<R extends object = T>(
+      filter: Filter<T>,
+      options: ModifyOptions<FindOneAndDeleteOptions, true> & { includeResultMetadata: true }
+    ): Promise<ModifyResult<R>>
+    findOneAndDelete<R extends object = T>(
+      filter: Filter<T>, options?: ModifyOptions<FindOneAndDeleteOptions, false>
     ): Promise<R | null>
-    findOneAndDelete<R extends object = T>(filter: Filter<T>, options?: FindOneAndDeleteOptions): Promise<R | null>
+    findOneAndDelete<R extends object = T>(
+      filter: Filter<T>, options: ModifyOptions<FindOneAndDeleteOptions>
+    ): Promise<R | ModifyResult<R> | null>
+    findOneAndDelete<R extends object = T>(filter: Filter<T>, options?: FindOneAndDeleteOptions): Promise<R | Document | null>
     /** CLI-only first batch; use find().toArray() in application code. */
     findArray(filter?: Filter<T>, options?: Omit<FindOptions, 'batchSize' | 'singleBatch'>): Promise<T[]>
     updateOne(filter: Filter<T>, update: Update<T>, options?: UpdateOptions): Promise<Document>
@@ -313,7 +370,15 @@ declare namespace libDb {
     /** The service payload is not normalized to a name by this library. */
     createIndex(specification: IndexSpecification, options?: IndexOptions): Promise<unknown>
     dropIndex(index: string, options?: Omit<CommandOperationOptions, 'explain'>): Promise<Document>
-    distinct(field: string | Document, filter?: Filter<T>, options?: CommandOperationOptions): Promise<unknown[]>
+    distinct(
+      field: string | Document, filter: Filter<T>,
+      options: CommandOperationOptions & { explain: NonNullable<CommandOperationOptions['explain']> }
+    ): Promise<Document>
+    distinct(
+      field: string | Document, filter?: Filter<T>,
+      options?: Omit<CommandOperationOptions, 'explain'> & { explain?: never }
+    ): Promise<unknown[]>
+    distinct(field: string | Document, filter?: Filter<T>, options?: CommandOperationOptions): Promise<Document | unknown[]>
     countDocuments(filter?: Filter<T>, options?: CountDocumentsOptions): Promise<number>
     /** @deprecated Use countDocuments instead. */
     count(filter?: Filter<T>, options?: CountDocumentsOptions): Promise<number>
