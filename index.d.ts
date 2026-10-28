@@ -148,13 +148,9 @@ declare namespace libDb {
     skip?: number
     hint?: string | Document
     batchSize?: number
-    maxTimeMS?: number
     singleBatch?: boolean
     /** Accepted for compatibility; has no effect on ABDB's non-sharded replica sets. */
     allowPartialResults?: boolean
-    readPreference?: OperationOptions['readPreference']
-    readConcern?: CommandOperationOptions['readConcern']
-    comment?: string
   }
 
   interface FindOneAndUpdateOptions extends CommandOperationOptions<'queryPlanner'> {
@@ -254,7 +250,6 @@ declare namespace libDb {
   interface CountDocumentsOptions extends CommandOperationOptions {
     batchSize?: number
     bypassDocumentValidation?: boolean
-    maxTimeMS?: number
     hint?: string | Document
   }
 
