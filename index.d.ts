@@ -119,11 +119,13 @@ declare namespace libDb {
 
   interface InsertOneOptions extends Omit<CommandOperationOptions, 'explain'> {
     bypassDocumentValidation?: boolean
+    forceServerObjectId?: boolean
   }
 
   interface InsertManyOptions extends Omit<CommandOperationOptions, 'explain'> {
     bypassDocumentValidation?: boolean
     ordered?: boolean
+    forceServerObjectId?: boolean
   }
 
   interface FindOptions {
@@ -201,6 +203,7 @@ declare namespace libDb {
   interface BulkWriteOptions extends Omit<CommandOperationOptions, 'explain'> {
     ordered?: boolean
     bypassDocumentValidation?: boolean
+    forceServerObjectId?: boolean
   }
 
   interface AggregateOptions {

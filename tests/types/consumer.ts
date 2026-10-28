@@ -99,6 +99,11 @@ export async function exercise(libDb: typeof import('@adobe/aio-lib-db')) {
   await users.findOne({}, { allowPartialResults: true })
   await users.findArray({}, { allowPartialResults: true })
   await users.insertOne({ name: 'Ada', age: 30 }, { writeConcern: { w: 'majority' } })
+  await users.insertOne({ name: 'Ada', age: 30 }, { forceServerObjectId: true })
+  await users.insertMany([{ name: 'Ada', age: 30 }], { forceServerObjectId: false })
+  await users.bulkWrite([
+    { insertOne: { document: { name: 'Ada', age: 30 } } }
+  ], { forceServerObjectId: true })
   await users.createIndex({ age: 1 }, { background: true })
   users.aggregate([], { writeConcern: { w: 'majority' } })
 
@@ -153,12 +158,12 @@ export async function exercise(libDb: typeof import('@adobe/aio-lib-db')) {
   users.countDocuments({}, { limit: 1 })
   // @ts-expect-error The deprecated count alias uses the same restricted options.
   users.count({}, { limit: 1 })
-  // @ts-expect-error Server ID generation is outside the declared insert contract.
-  users.insertOne({ name: 'Ada', age: 30 }, { forceServerObjectId: true })
-  // @ts-expect-error Server ID generation is outside the declared multi-insert contract.
-  users.insertMany([], { forceServerObjectId: true })
-  // @ts-expect-error Server ID generation is outside the declared bulk-write contract.
-  users.bulkWrite([], { forceServerObjectId: true })
+  // @ts-expect-error Server ID generation options must be boolean.
+  users.insertOne({ name: 'Ada', age: 30 }, { forceServerObjectId: 'yes' })
+  // @ts-expect-error Multi-insert server ID generation options must be boolean.
+  users.insertMany([], { forceServerObjectId: 1 })
+  // @ts-expect-error Bulk-write server ID generation options must be boolean.
+  users.bulkWrite([], { forceServerObjectId: 'yes' })
 
   // @ts-expect-error Metadata wraps the document rather than exposing its schema directly.
   expectType<User | null>(updated)

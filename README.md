@@ -109,7 +109,7 @@ optional `cause`) or other errors; narrow caught `unknown` values before use.
 compatibility options but do not change backend behavior. DocumentDB fixes
 durability, ABDB uses non-sharded replica sets, and index builds do not use the
 legacy background setting. Count `skip`/`limit` are omitted because they are
-non-functional; `forceServerObjectId` is not part of the declared library contract.
+non-functional.
 
 For `findOneAndUpdate`, `findOneAndReplace` and `findOneAndDelete`,
 `includeResultMetadata: true` returns a wrapper whose `value` is the selected
