@@ -83,7 +83,10 @@ async function adultNames(token: string) {
 
 Collection type parameters describe application documents; they do not validate
 stored data. Include `_id` in your schema when using it. Supply the output type
-when a projection or aggregation changes the document shape. Cursor `next()`
+when a projection or aggregation changes the document shape. Configure projections
+and grouping before `map()`: an existing transform still runs on the projected or
+grouped documents, and supplying an output type does not replace that transform.
+Cursor `next()`
 returns `null` at exhaustion; `map()` also supports asynchronous transformations.
 Configure cursors before iteration starts, or the runtime throws. `stream()`
 returns a Node readable stream with an optional synchronous transform.

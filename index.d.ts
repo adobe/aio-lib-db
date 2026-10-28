@@ -409,6 +409,7 @@ declare namespace libDb {
     filter(filter: Filter<TSchema>): this
     /** Formatting is delegated to the service. */
     sort(sort: string | string[] | Document | number, direction?: string | Document | number): this
+    /** Configure projections before map(); existing transforms still run on projected documents. */
     project<R extends object = Document>(projection: Document): FindCursor<R, TSchema>
     limit(limit: number): this
     skip(skip: number): this
@@ -419,10 +420,12 @@ declare namespace libDb {
     /** Executes immediately and exhausts the cursor. */
     explain(): Promise<Document>
     addStage(stage: AggregateStage): this
+    /** Configure grouping before map(); existing transforms still run on grouped documents. */
     group<R extends object = Document>(groupSpec: AggregateStageDefinitions['$group']): AggregateCursor<R>
     limit(limit: AggregateStageDefinitions['$limit']): this
     match(matchSpec: AggregateStageDefinitions['$match']): this
     out(outSpec: AggregateStageDefinitions['$out']): this
+    /** Configure projections before map(); existing transforms still run on projected documents. */
     project<R extends object = Document>(projectSpec: AggregateStageDefinitions['$project']): AggregateCursor<R>
     lookup(lookupSpec: AggregateStageDefinitions['$lookup']): this
     redact(redactSpec: AggregateStageDefinitions['$redact']): this
