@@ -89,55 +89,187 @@ declare namespace libDb {
     $inc?: Record<string, number>
   }
 
-  /** Forwarded to the service. Known option values are checked; other service keys stay open. */
-  interface Options extends Document {
-    comment?: unknown
-    maxTimeMS?: number
+  type ReadPreferenceMode = 'primary' | 'primaryPreferred' | 'secondary' | 'secondaryPreferred' | 'nearest'
+
+  interface OperationOptions {
+    readPreference?: ReadPreferenceMode | {
+      mode: ReadPreferenceMode
+    }
+    ignoreUndefined?: boolean
+    enableUtf8Validation?: boolean
   }
 
-  interface WriteOptions extends Options {
+  type ExplainVerbosity = 'queryPlanner' | 'executionStats'
+
+  interface CommandOperationOptions<TVerbosity extends ExplainVerbosity = ExplainVerbosity>
+    extends OperationOptions {
+    readConcern?: { level: 'local' | 'available' | 'majority' }
+    maxTimeMS?: number
+    comment?: string
+    explain?: false | TVerbosity | { verbosity: TVerbosity; maxTimeMS?: number }
+  }
+
+  interface InsertOneOptions extends Omit<CommandOperationOptions, 'explain'> {
+    bypassDocumentValidation?: boolean
+  }
+
+  interface InsertManyOptions extends Omit<CommandOperationOptions, 'explain'> {
+    bypassDocumentValidation?: boolean
     ordered?: boolean
+  }
+
+  interface FindOptions {
+    sort?: Document
+    projection?: Document
+    hint?: string | Document
+    skip?: number
+    limit?: number
+    batchSize?: number
+    singleBatch?: boolean
+    comment?: string
+    maxTimeMS?: number
+    readConcern?: CommandOperationOptions['readConcern']
+  }
+
+  interface FindOneOptions extends Omit<CommandOperationOptions, 'explain'> {
+    limit?: number
+    sort?: Document
+    projection?: Document
+    skip?: number
+    hint?: string | Document
+    batchSize?: number
+    maxTimeMS?: number
+    singleBatch?: boolean
+    readPreference?: OperationOptions['readPreference']
+    readConcern?: CommandOperationOptions['readConcern']
+    comment?: string
+  }
+
+  interface FindOneAndUpdateOptions extends CommandOperationOptions<'queryPlanner'> {
+    arrayFilters?: Document[]
+    bypassDocumentValidation?: boolean
+    hint?: string | Document
+    projection?: Document
+    returnDocument?: 'before' | 'after'
+    sort?: Document
+    upsert?: boolean
+    includeResultMetadata?: boolean
+  }
+
+  interface FindOneAndReplaceOptions extends CommandOperationOptions<'queryPlanner'> {
+    bypassDocumentValidation?: boolean
+    hint?: string | Document
+    projection?: Document
+    returnDocument?: 'before' | 'after'
+    sort?: Document
+    upsert?: boolean
+    includeResultMetadata?: boolean
+  }
+
+  interface FindOneAndDeleteOptions extends CommandOperationOptions<'queryPlanner'> {
+    hint?: string | Document
+    projection?: Document
+    sort?: Document
+    includeResultMetadata?: boolean
+  }
+
+  interface UpdateOptions extends CommandOperationOptions<'queryPlanner'> {
+    arrayFilters?: Document[]
+    bypassDocumentValidation?: boolean
+    hint?: string | Document
     upsert?: boolean
   }
 
-  interface FindOptions extends Options {
-    projection?: Document
-    sort?: Document
-    limit?: number
-    skip?: number
+  interface ReplaceOptions extends Omit<CommandOperationOptions, 'explain'> {
+    bypassDocumentValidation?: boolean
+    hint?: string | Document
+    upsert?: boolean
+  }
+
+  interface DeleteOptions extends CommandOperationOptions<'queryPlanner'> {
+    ordered?: boolean
+  }
+
+  interface BulkWriteOptions extends Omit<CommandOperationOptions, 'explain'> {
+    ordered?: boolean
+    bypassDocumentValidation?: boolean
+  }
+
+  interface AggregateOptions {
+    explain?: true
     batchSize?: number
+    maxTimeMS?: number
+    bypassDocumentValidation?: boolean
+    readConcern?: CommandOperationOptions['readConcern']
+    hint?: string | Document
+    comment?: string
   }
 
-  interface FindOneAndModifyOptions extends FindOptions, WriteOptions {
-    returnDocument?: 'before' | 'after'
+  interface AggregateStageDefinitions {
+    $addFields: Document
+    $count: string
+    $geoNear: Document
+    $group: Document
+    $limit: number
+    $lookup: Document & { pipeline?: AggregatePipeline }
+    $match: Document
+    $out: string
+    $project: Document
+    $redact: Document | '$$DESCEND' | '$$PRUNE' | '$$KEEP'
+    $replaceRoot: { newRoot: unknown }
+    $sample: { size: number }
+    $skip: number
+    $sort: Document
+    $unwind: string | {
+      path: string
+      includeArrayIndex?: string
+      preserveNullAndEmptyArrays?: boolean
+    }
   }
 
-  interface AggregateOptions extends Options {
+  /** Exactly one supported stage per object; expressions remain open service documents. */
+  type AggregateStage = {
+    [Stage in keyof AggregateStageDefinitions]:
+      { [Key in Stage]: AggregateStageDefinitions[Key] }
+      & { [Key in Exclude<keyof AggregateStageDefinitions, Stage>]?: never }
+  }[keyof AggregateStageDefinitions]
+
+  type AggregatePipeline = AggregateStage[]
+
+  interface CountDocumentsOptions extends CommandOperationOptions {
     batchSize?: number
-    allowDiskUse?: boolean
-    explain?: boolean
+    bypassDocumentValidation?: boolean
+    maxTimeMS?: number
+    hint?: string | Document
   }
 
-  interface StatsOptions extends Options {
+  interface RenameCollectionOptions extends Omit<CommandOperationOptions, 'explain'> {
+    dropTarget?: boolean
+  }
+
+  interface StatsOptions {
     scale?: number
   }
 
-  interface ListCollectionsOptions extends Options {
+  interface ListCollectionsOptions extends Omit<CommandOperationOptions, 'explain'> {
     nameOnly?: boolean
-    authorizedCollections?: boolean
   }
 
-  interface CreateCollectionOptions extends Options {
+  interface CreateCollectionOptions extends Omit<CommandOperationOptions, 'explain'> {
     validator?: Document
+    validationLevel?: 'off' | 'strict' | 'moderate'
+    validationAction?: 'error'
   }
 
   type IndexSpecification = Record<string, 1 | -1 | 'text' | '2dsphere'>
 
-  interface IndexOptions extends Options {
-    name?: string
+  interface IndexOptions extends Omit<CommandOperationOptions, 'explain'> {
     unique?: boolean
+    name?: string
+    partialFilterExpression?: Document
     sparse?: boolean
     expireAfterSeconds?: number
+    weights?: Record<string, number>
   }
 
   type BulkWriteOperation<T extends object = Document> =
@@ -157,38 +289,38 @@ declare namespace libDb {
     name: string
     db: DbBase
     client: DbClient
-    insertOne(document: T, options?: WriteOptions): Promise<Document>
-    insertMany(documents: T[], options?: WriteOptions): Promise<Document>
-    findOne<R extends object = T>(filter: Filter<T>, options?: FindOptions): Promise<R | null>
+    insertOne(document: T, options?: InsertOneOptions): Promise<Document>
+    insertMany(documents: T[], options?: InsertManyOptions): Promise<Document>
+    findOne<R extends object = T>(filter: Filter<T>, options?: FindOneOptions): Promise<R | null>
     find(filter?: Filter<T>, options?: FindOptions): FindCursor<T, T>
     findOneAndUpdate<R extends object = T>(
-      filter: Filter<T>, update: Update<T>, options?: FindOneAndModifyOptions
+      filter: Filter<T>, update: Update<T>, options?: FindOneAndUpdateOptions
     ): Promise<R | null>
     findOneAndReplace<R extends object = T>(
-      filter: Filter<T>, replacement: T, options?: FindOneAndModifyOptions
+      filter: Filter<T>, replacement: T, options?: FindOneAndReplaceOptions
     ): Promise<R | null>
-    findOneAndDelete<R extends object = T>(filter: Filter<T>, options?: FindOptions): Promise<R | null>
+    findOneAndDelete<R extends object = T>(filter: Filter<T>, options?: FindOneAndDeleteOptions): Promise<R | null>
     /** CLI-only first batch; use find().toArray() in application code. */
-    findArray(filter?: Filter<T>, options?: FindOptions): Promise<T[]>
-    updateOne(filter: Filter<T>, update: Update<T>, options?: WriteOptions): Promise<Document>
-    updateMany(filter: Filter<T>, update: Update<T>, options?: WriteOptions): Promise<Document>
-    replaceOne(filter: Filter<T>, replacement: T, options?: WriteOptions): Promise<Document>
-    deleteOne(filter: Filter<T>, options?: Options): Promise<Document>
-    deleteMany(filter: Filter<T>, options?: Options): Promise<Document>
-    aggregate<R = Document>(pipeline?: Document[], options?: AggregateOptions): AggregateCursor<R>
-    bulkWrite(operations: BulkWriteOperation<T>[], options?: WriteOptions): Promise<Document>
+    findArray(filter?: Filter<T>, options?: Omit<FindOptions, 'batchSize' | 'singleBatch'>): Promise<T[]>
+    updateOne(filter: Filter<T>, update: Update<T>, options?: UpdateOptions): Promise<Document>
+    updateMany(filter: Filter<T>, update: Update<T>, options?: UpdateOptions): Promise<Document>
+    replaceOne(filter: Filter<T>, replacement: T, options?: ReplaceOptions): Promise<Document>
+    deleteOne(filter: Filter<T>, options?: DeleteOptions): Promise<Document>
+    deleteMany(filter: Filter<T>, options?: DeleteOptions): Promise<Document>
+    aggregate<R = Document>(pipeline?: AggregatePipeline, options?: AggregateOptions): AggregateCursor<R>
+    bulkWrite(operations: BulkWriteOperation<T>[], options?: BulkWriteOptions): Promise<Document>
     getIndexes(): Promise<Document[]>
     /** The service payload is not normalized to a name by this library. */
     createIndex(specification: IndexSpecification, options?: IndexOptions): Promise<unknown>
-    dropIndex(index: string, options?: Options): Promise<Document>
-    distinct(field: string | Document, filter?: Filter<T>, options?: Options): Promise<unknown[]>
-    countDocuments(filter?: Filter<T>, options?: Options): Promise<number>
+    dropIndex(index: string, options?: Omit<CommandOperationOptions, 'explain'>): Promise<Document>
+    distinct(field: string | Document, filter?: Filter<T>, options?: CommandOperationOptions): Promise<unknown[]>
+    countDocuments(filter?: Filter<T>, options?: CountDocumentsOptions): Promise<number>
     /** @deprecated Use countDocuments instead. */
-    count(filter?: Filter<T>, options?: Options): Promise<number>
-    estimatedDocumentCount(options?: Options): Promise<number>
-    drop(options?: Options): Promise<void>
+    count(filter?: Filter<T>, options?: CountDocumentsOptions): Promise<number>
+    estimatedDocumentCount(options?: Omit<CommandOperationOptions, 'explain'>): Promise<number>
+    drop(options?: Omit<CommandOperationOptions, 'explain'>): Promise<void>
     /** Updates this collection handle's name after the service request completes. */
-    renameCollection(newCollectionName: string, options?: Options): Promise<void>
+    renameCollection(newCollectionName: string, options?: RenameCollectionOptions): Promise<void>
     stats(options?: StatsOptions): Promise<Document>
   }
 
@@ -226,18 +358,18 @@ declare namespace libDb {
   interface AggregateCursor<T = Document> extends AbstractDbCursor<T> {
     /** Executes immediately and exhausts the cursor. */
     explain(): Promise<Document>
-    addStage(stage: Document): this
-    group<R extends object = Document>(groupSpec: Document): AggregateCursor<R>
-    limit(limit: number): this
-    match(matchSpec: Document): this
-    out(outSpec: string | Document): this
-    project<R extends object = Document>(projectSpec: Document): AggregateCursor<R>
-    lookup(lookupSpec: Document): this
-    redact(redactSpec: Document): this
-    skip(skip: number): this
-    sort(sortSpec: string | Document | number): this
-    unwind(unwindSpec: string | Document): this
-    geoNear(geoNearSpec: Document): this
+    addStage(stage: AggregateStage): this
+    group<R extends object = Document>(groupSpec: AggregateStageDefinitions['$group']): AggregateCursor<R>
+    limit(limit: AggregateStageDefinitions['$limit']): this
+    match(matchSpec: AggregateStageDefinitions['$match']): this
+    out(outSpec: AggregateStageDefinitions['$out']): this
+    project<R extends object = Document>(projectSpec: AggregateStageDefinitions['$project']): AggregateCursor<R>
+    lookup(lookupSpec: AggregateStageDefinitions['$lookup']): this
+    redact(redactSpec: AggregateStageDefinitions['$redact']): this
+    skip(skip: AggregateStageDefinitions['$skip']): this
+    sort(sortSpec: AggregateStageDefinitions['$sort']): this
+    unwind(unwindSpec: AggregateStageDefinitions['$unwind']): this
+    geoNear(geoNearSpec: AggregateStageDefinitions['$geoNear']): this
     map<R>(transform: (document: T) => R | Promise<R>): AggregateCursor<R>
   }
 }
