@@ -131,13 +131,6 @@ describe('DbCollection tests', () => {
     )
   })
 
-  test('countDocuments forwards pagination options', async () => {
-    await collection.countDocuments({}, { skip: 1, limit: 10 })
-    expect(nonSessClient).toHaveCalledServicePost(
-      'v1/collection/testCollection/countDocuments', { filter: {}, options: { skip: 1, limit: 10 } }
-    )
-  })
-
   test('findArray calls the appropriate endpoint', async () => {
     const filter = { name: 'Item1' }
     await collection.findArray(filter)

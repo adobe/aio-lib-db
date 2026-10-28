@@ -110,6 +110,7 @@ declare namespace libDb {
   interface CommandOperationOptions<TVerbosity extends ExplainVerbosity = ExplainVerbosity>
     extends OperationOptions {
     readConcern?: { level: 'local' | 'available' | 'majority' }
+    /** Accepted for compatibility; DocumentDB fixes durability and ignores these settings. */
     writeConcern?: WriteConcern
     maxTimeMS?: number
     comment?: string
@@ -118,13 +119,11 @@ declare namespace libDb {
 
   interface InsertOneOptions extends Omit<CommandOperationOptions, 'explain'> {
     bypassDocumentValidation?: boolean
-    forceServerObjectId?: boolean
   }
 
   interface InsertManyOptions extends Omit<CommandOperationOptions, 'explain'> {
     bypassDocumentValidation?: boolean
     ordered?: boolean
-    forceServerObjectId?: boolean
   }
 
   interface FindOptions {
@@ -135,6 +134,7 @@ declare namespace libDb {
     limit?: number
     batchSize?: number
     singleBatch?: boolean
+    /** Accepted for compatibility; has no effect on ABDB's non-sharded replica sets. */
     allowPartialResults?: boolean
     comment?: string
     maxTimeMS?: number
@@ -150,6 +150,7 @@ declare namespace libDb {
     batchSize?: number
     maxTimeMS?: number
     singleBatch?: boolean
+    /** Accepted for compatibility; has no effect on ABDB's non-sharded replica sets. */
     allowPartialResults?: boolean
     readPreference?: OperationOptions['readPreference']
     readConcern?: CommandOperationOptions['readConcern']
@@ -204,7 +205,6 @@ declare namespace libDb {
   interface BulkWriteOptions extends Omit<CommandOperationOptions, 'explain'> {
     ordered?: boolean
     bypassDocumentValidation?: boolean
-    forceServerObjectId?: boolean
   }
 
   interface AggregateOptions {
@@ -216,6 +216,7 @@ declare namespace libDb {
     readConcern?: CommandOperationOptions['readConcern']
     hint?: string | Document
     comment?: string
+    /** Accepted for compatibility; DocumentDB fixes durability and ignores these settings. */
     writeConcern?: WriteConcern
   }
 
@@ -251,8 +252,6 @@ declare namespace libDb {
   type AggregatePipeline = AggregateStage[]
 
   interface CountDocumentsOptions extends CommandOperationOptions {
-    skip?: number
-    limit?: number
     batchSize?: number
     bypassDocumentValidation?: boolean
     maxTimeMS?: number
@@ -280,6 +279,7 @@ declare namespace libDb {
   type IndexSpecification = Record<string, 1 | -1 | 'text' | '2dsphere'>
 
   interface IndexOptions extends Omit<CommandOperationOptions, 'explain'> {
+    /** Accepted for compatibility; does not change index creation behavior. */
     background?: boolean
     unique?: boolean
     name?: string

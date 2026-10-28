@@ -95,14 +95,10 @@ export async function exercise(libDb: typeof import('@adobe/aio-lib-db')) {
   expectType<Document>(await users.aggregate().explain())
   expectType<void>(await client.close())
 
-  expectType<number>(await users.countDocuments({}, { skip: 1, limit: 10 }))
-  users.count({}, { skip: 1, limit: 10 })
   users.find({}, { allowPartialResults: true })
   await users.findOne({}, { allowPartialResults: true })
   await users.findArray({}, { allowPartialResults: true })
-  await users.insertOne({ name: 'Ada', age: 30 }, { forceServerObjectId: true, writeConcern: { w: 'majority' } })
-  await users.insertMany([], { forceServerObjectId: true })
-  await users.bulkWrite([], { forceServerObjectId: true })
+  await users.insertOne({ name: 'Ada', age: 30 }, { writeConcern: { w: 'majority' } })
   await users.createIndex({ age: 1 }, { background: true })
   users.aggregate([], { writeConcern: { w: 'majority' } })
 
@@ -133,8 +129,8 @@ export async function exercise(libDb: typeof import('@adobe/aio-lib-db')) {
   expectType<unknown[]>(await users.distinct('name', {}, distinctOptions))
   // @ts-expect-error Explain mode does not promise a schema-shaped document.
   expectType<User | null>(await users.findOneAndUpdate({}, {}, { explain: false }))
-  // @ts-expect-error Count offsets must be numeric.
-  users.countDocuments({}, { skip: 'one' })
+  // @ts-expect-error Count offsets are non-functional and not part of the contract.
+  users.countDocuments({}, { skip: 1 })
   // @ts-expect-error Partial-results options must be boolean.
   users.find({}, { allowPartialResults: 'yes' })
   // @ts-expect-error Explain responses cannot be iterated as ordinary aggregation cursors.

@@ -103,12 +103,21 @@ for service support; only cursor methods implemented by this library are exposed
 Errors can be `DbError`-shaped (including `requestId`, `httpStatusCode` and an
 optional `cause`) or other errors; narrow caught `unknown` values before use.
 
+`writeConcern`, `allowPartialResults` and index `background` are accepted
+compatibility options but do not change backend behavior. DocumentDB fixes
+durability, ABDB uses non-sharded replica sets, and index builds do not use the
+legacy background setting. Count `skip`/`limit` are omitted because they are
+non-functional; `forceServerObjectId` is not part of the declared library contract.
+
 For `findOneAndUpdate`, `findOneAndReplace` and `findOneAndDelete`,
 `includeResultMetadata: true` returns a wrapper whose `value` is the selected
 document or `null`. Without that option, the document or `null` is returned
 directly. `distinct` returns a values array normally and a plan document when an
 explain option is supplied; for driver-backed operations, even `explain: false`
 requests `queryPlanner` rather than disabling explain.
+Comments must be strings. Update, delete and find-and-modify operations support
+`queryPlanner`, not `executionStats`. Explain results remain
+`Record<string, unknown>` because DocumentDB plans can differ from MongoDB plans.
 
 Use `collection.aggregate(pipeline).explain()` for aggregation explanations.
 Do not pass `{ explain: true }` to `aggregate()` and iterate the returned cursor:
