@@ -93,8 +93,7 @@ operation-specific: the library forwards them, but the service rejects unknown
 option names. Schema fields are checked; dotted paths, query operators and
 aggregation expressions remain open. Pipeline stages are restricted to the
 supported stage names, with one stage per object, including nested lookup
-pipelines. Service
-write/admin response objects use `Record<string, unknown>`, and unspecified
+pipelines. Service write/admin response objects use `Record<string, unknown>`, and unspecified
 payloads such as the `createIndex()` response use `unknown`: narrow those values
 before use instead of assuming MongoDB result fields. This library passes service
 payloads through after Extended JSON decoding. See the
