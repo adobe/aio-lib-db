@@ -106,6 +106,31 @@ describe('DbCollection tests', () => {
     expect(await nonSessClient.getSessionCookies()).toEqual([])
   })
 
+  test.each(['findOneAndUpdate', 'findOneAndReplace', 'findOneAndDelete'])(
+    '%s forwards metadata options and preserves the response wrapper',
+    async method => {
+      const result = { value: { name: 'Item1' }, ok: 1 }
+      nonSessClient.post.mockResolvedValueOnce({ data: { success: true, data: result } })
+      const options = { includeResultMetadata: true }
+      const args = method === 'findOneAndDelete' ? [{}, options] : [{}, {}, options]
+      expect(await collection[method](...args)).toEqual(result)
+      expect(nonSessClient).toHaveCalledServicePost(
+        `v1/collection/testCollection/${method}`,
+        { filter: {}, ...(method === 'findOneAndUpdate' ? { update: {} }
+          : method === 'findOneAndReplace' ? { replacement: {} } : {}), options }
+      )
+    }
+  )
+
+  test.each([false, 'queryPlanner'])('distinct preserves explain=%s and returns the plan payload', async explain => {
+    const result = { queryPlanner: { namespace: 'testCollection' } }
+    nonSessClient.post.mockResolvedValueOnce({ data: { success: true, data: result } })
+    expect(await collection.distinct('name', {}, { explain })).toEqual(result)
+    expect(nonSessClient).toHaveCalledServicePost(
+      'v1/collection/testCollection/distinct', { field: 'name', filter: {}, options: { explain } }
+    )
+  })
+
   test('findArray calls the appropriate endpoint', async () => {
     const filter = { name: 'Item1' }
     await collection.findArray(filter)

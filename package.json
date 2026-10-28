@@ -1,13 +1,17 @@
 {
   "name": "@adobe/aio-lib-db",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "An abstraction on top of Document DB storage",
   "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "test": "jest --passWithNoTests"
   },
   "exports": {
-    ".": "./index.js"
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
   },
   "author": "Adobe Inc.",
   "license": "Apache-2.0",
@@ -26,7 +30,11 @@
     "tough-cookie": "^5.1.2"
   },
   "devDependencies": {
+    "@types/node": "^18.19.130",
     "jest": "^30.2.0",
+    "typescript": "7.0.2",
+    "typescript-5": "npm:typescript@5.7.3",
+    "typescript-6": "npm:typescript@6.0.3",
     "uuid": "^11.1.0"
   },
   "overrides": {
