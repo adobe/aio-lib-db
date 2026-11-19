@@ -30,7 +30,7 @@
     "tough-cookie": "^5.1.2"
   },
   "devDependencies": {
-    "@types/node": "^18.19.130",
+    "@types/node": "^26.0.0",
     "jest": "^30.2.0",
     "typescript": "7.0.2",
     "typescript-5": "npm:typescript@5.7.3",
